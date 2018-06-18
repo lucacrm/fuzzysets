@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.cm as cm
 import pandas as pd
+import random
+from possibilearn import *
 from possibilearn.kernel import GaussianKernel
 import math
 import itertools as it
@@ -13,7 +15,7 @@ def g(m):
 def create_generator(data_set, n_components):
     a = -4 #capire
     b = 8 #capire
-    def gen(m)
+    def gen(m):
         return (a + np.random.random(n_components*m) * b).reshape((m, n_components))
 
 def gr_membership_graded(estimated_membership, color_map):
@@ -299,142 +301,43 @@ def clustering(x, kernel, c, labels=[], graph=False):
         
     return build_clusters(x, index_v, index_sv, radius, d), radius
 
-def count_clusters(clusters):
-    return len(filter(lambda x: len(x)>1, clusters)), len(filter(lambda x: len(x)==1, clusters))
-
-def find_sigma(sample, min_sigma, max_sigma, min_clusters, max_clusters, max_width, n_misclassification, c):
+def get_principal_components(data, n):
     
     '''
-    binary research of a sigma that divied the dataset in a defined number of cluster
-    
-    - sample: array of points to be clustered
-    - min_sigma, max_sigma: define the range of sigma
-    - min_clusters, max_clusters: define the range of the number of clusters
-    - max_width: define the max width of the interval for the research of sigma
-    - n_misclassification: define the max number of admitted singleton cluster
-    - c: tradeoff parameter
-    
-    '''
-    a = min_sigma
-    b = max_sigma
-    
-    while( (b-a) >= max_width ):
-        
-        current_sigma = (a + b)/2
-        current_clusters, r = clustering(sample, current_sigma, c)
-        n_clusters, n_singleton = count_clusters(current_clusters)
-        
-        print("%.20f" % current_sigma)
-        print(current_clusters)
-        print(n_clusters)
-        print('\n')
-        
-        if min_clusters <= n_clusters <= max_clusters:
-            if n_singleton <= n_misclassification:
-                return current_sigma, current_clusters
-            else:
-                a = current_sigma
-        else:
-            if n_clusters < min_clusters:
-                if n_singleton > n_misclassification:
-                    a = current_sigma
-                else:
-                    b = current_sigma
-                    
-            if n_clusters > max_clusters:
-                    b = current_sigma
-           
-    return current_sigma, current_clusters
-
-from possibilearn.fuzzifiers import *
-def get_estimated_membership_function(cluster, sigma, c, sample_generator, fuzzifier=CrispFuzzifier(), n=1500):
-    
-    '''
-    create a membership function for a specified cluster
-    
-    - cluster: cluster upon which create the membership function
-    - sigma: GaussianKernel parameter
-    - c: tradeoff value
-    - sample_generator: function that return a sample of points
-    - n: number of points in the sample
-    - fuzzifier: fuzzifier object that decide how the membership function decrease from one to zero
-    
-    '''
-
-    k = GaussianKernel(sigma)
-    betas = solve_wolf(cluster, k, c)
-    
-    index_sv = []
-    for i in range(len(betas)):
-        if 0 < betas[i] < c:
-            index_sv.append(i)
-            
-    radius, d = squared_radius_and_distance(cluster, betas, index_sv, k, c, mean=False)
-    
-    rndsample = sample_generator(n)
-    
-    f = fuzzifier.get_fuzzified_membership(radius,rndsample,d)
-    
-    return f
-
-def get_estimated_memberships(x, clusters, sigma, c, sample_generator, fuzzifier=CrispFuzzifier(), n=1500):
-    
-    '''
-    compute an estimated membership to some clusters for a set of point
-    
-    - x: set of points upon which estimate membership
-    - clusters: array of array/list, every sub-array/sub-list represents a cluster of points
-    - sigma: GaussianKernel parameter
-    - c: tradeoff value
-    - sample_generator: function that return a sample of points
-    - n: number of points in the sample
-    - fuzzifier: fuzzifier object that decide how the membership function decrease from one to zero
-    
-    '''
-
-    D={}
-    cl_id = 0
-    for cl in clusters:
-        current_cluster = np.array(cl)
-        f = get_estimated_membership_function(current_cluster, sigma, c, sample_generator, fuzzifier)
-        current_membership = [f(point) for point in x]
-        D[cl_id] = current_membership
-        cl_id = cl_id +1
-        
-    return D
-
-def get_principal_components(data, n_components):
-    
-    '''
-    extract the n_components principal components of a data set
+    extract the n principal components of a data set
     
     - data: data set upon wich extract the principal components
-    - n_components: number of the wished components
-    
+    - n: number of the wished components
     '''
-    data = np.array(data)
-    
-    '''
-    if len(data[0]) > n_components:
-        raise valueError
-    '''   
     
     from sklearn.decomposition import PCA
     from sklearn.preprocessing import StandardScaler
+    
+    data = np.array(data)
+    
+    if len(data[0]) < n or n < 1:
+        raise ValueError( 'Invalid number of components. It must be between 0 and data length')
 
     data_std = StandardScaler().fit_transform(data)
-    pca_nd = PCA(n_components)
+    pca_nd = PCA(n)
     return pca_nd.fit_transform(data_std)
 
-def get_random_sets(n, percentuals):
+def get_random_sets_by_index(n, percentuals):
     
     '''
     create a random permutation of the numbers in the range from 0 to n-1 and divide the permutation in three sets according
     to the passed percentuals.
+    
+    n: range of the data
+    percentuals: tuple (a,b,c) a+b+c must be 1
     '''
+    
+    if sum(percentuals) !=1:
+        raise ValueError('The sum of the elements in the tuple of percentuals must be 1')
     
     indexes = range(n)
     permutation = np.random.permutation(indexes)
+    
     perc_train, perc_val, perc_test = percentuals
     
     train_index = permutation[:int(n*perc_train)]
@@ -443,18 +346,27 @@ def get_random_sets(n, percentuals):
     
     return train_index, validation_index, test_index
 
-
-def compute_accuracy(data_set, validation_set, validation_index, clusters_labels, estimated_memberships, log):
+def get_random_sets(x, percentuals):
     
-    guessed_labels = np.array([clusters_labels[np.argmax([e(t) for e in estimated_memberships])] 
-                                       for t in validation_set])
-    correct_labels = np.array(data_set[validation_index])
-    if log:
-        print 'correct labels: ', correct_labels
-        print 'guessed labels: ', guessed_labels
-        
-    return float(sum(guessed_labels == correct_labels)) / len(validation_set)
-
+    '''
+    create a random permutation of the data in x and divide the permutation in three sets according
+    to the passed percentuals.
+    
+    x: data set
+    percentuals: tuple (a,b,c) a+b+c must be 1
+    '''
+    if sum(percentuals) !=1:
+        raise ValueError('The sum of the elements in the tuple of percentuals must be 1')
+    
+    n=len(x)
+    permutation = np.random.permutation(x)
+    perc_train, perc_val, perc_test = percentuals
+    
+    train = permutation[:int(n*perc_train)]
+    validation = permutation[int(n*perc_train):int(n*(perc_train+perc_val))]
+    test = permutation[int(n*(perc_train+perc_val)):]
+    
+    return train, validation, test
 
 def get_different_labels(labels):
     
@@ -468,10 +380,10 @@ def get_different_labels(labels):
     return ok_index
 
     
-def learn_fs(x, y, c=1, kernel=GaussianKernel(1), min_size=0.01, fuzzifier=LinearFuzzifier(), mu_f):
+def learn_fs(x, c=1, kernel=GaussianKernel(1), min_size=0.01, fuzzifier=LinearFuzzifier(), mu_function=None):
 
     '''
-    Divide a set of data in clusters and, for all cluster, compute a membership function
+    Divides a set of data into clusters and it computes a membership function for all found clusters
     
     - x: set of points
     - y: labels of points
@@ -486,29 +398,30 @@ def learn_fs(x, y, c=1, kernel=GaussianKernel(1), min_size=0.01, fuzzifier=Linea
     
     x_len=len(x)
     
-    try:
-        clusters_index, r = clustering(x, kernel, c) #clusterize data using indexes
+    clusters_index, r = clustering(x, kernel, c) #clusterize data using indexes
+
+    clusters_index = [ cl for cl in clusters_index if len(cl) > x_len*min_size ] #exclude small clusters
+
+    clusters_index.sort(key = lambda x: -len(x)) #sort clusters by len in order to get bigger cluster in the associate_fs_to_labels function with force parameters set to true
+
+    clusters = [x[cl] for cl in clusters_index] #clusterize real data (data of x)
+
+    #compute initial mus for compute the estimated memberships (farlo fare a un "fuzzificatore" passato come parametro)
+    mus = [[1 if i in ci else 0 for i in range(x_len)] for ci in clusters_index ]
+
+    estimated_memberships = []
+
+    for i in range(len(clusters)):
+        estimated_membership, _ = possibility_learn(x,
+                                          mus[i],
+                                          c=c,
+                                          k=kernel,
+                                          fuzzifier=fuzzifier,
+                                          sample_generator=g)
+        estimated_memberships.append(estimated_membership)
         
-        clusters_index = [ cl for cl in clusters_index if len(cl) > x_len*min_size ] #exclude small clusters
-        
-        clusters_index.sort(key = lambda x: -len(x)) #sort clusters by len in order to get bigger cluster in the associate_fs_to_labels function with force parameters set to true
-            
-        clusters = [x[cl] for cl in clusters_index] #clusterize real data (data of x)
-        
-        mus = [[1 if i in ci for i in range(len_x)] for ci in clusters_index ] #compute initial mus for compute the estimated memberships (farlo fare a un "fuzzificatore" passato come parametro)
-                
-                estimated_memberships = []
-                for i in range(len(clusters)):
-                    estimated_membership, _ = possibility_learn(x,
-                                                      mus[i],
-                                                      c=c,
-                                                      k=kernel,
-                                                      fuzzifier=fuzzifier
-                                                      sample_generator=g)
-                    estimated_memberships.append(estimated_membership)
-                    
-    except ValueError as e:
-        print str(e)
+    if None in estimated_memberships:
+        raise ValueError('Unable to infer membership functions')
         
     return estimated_memberships, clusters_index
 
@@ -529,14 +442,14 @@ def associate_fs_to_labels(x, y, membership_functions, force_num_fs=False, force
     labels = set(y)
     n_labels = len(labels)
     
-    if len(membership_functions) < n_labels && force_num_fs:
+    if (len(membership_functions) < n_labels) and force_num_fs:
             raise ValueError('Number of functions is less than the number of labels, cant force the number of functions')
     
     fuzzy_memberships = [[mf(p) for mf in membership_functions] for p in x]
     
     best_memberships = [np.argmax(m) for m in fuzzy_memberships]
     
-    labels_founded = np.array([[ y[i] if best_memberships[i] = k for i in range(len(y)) ] for k in range(len(memberships_functions))])
+    labels_founded = np.array([ [ y[i] for i in range(len(y)) if best_memberships[i] == k ] for k in range(len(membership_functions)) ])
     
     function_labels = [pd.Series(lf).mode()[0] for lf in labels_founded]
     
@@ -546,24 +459,170 @@ def associate_fs_to_labels(x, y, membership_functions, force_num_fs=False, force
             
         else:
             if force_num_fs:
-                return list(np.array(function_labels)[get_different_labels(labels)])
+                i = get_different_labels(function_labels)
+                return list(np.array(membership_functions)[i]), list(np.array(function_labels)[i])
             else:
-                return function_labels
+                return membership_functions, function_labels
              
-    if force_num_fs && not(force_labels_repr):
-        return function_labels[:n_labels]
+    if force_num_fs and not(force_labels_repr):
+        return membership_functions[:n_labels], function_labels[:n_labels]
         
-    if not(force_num_fs) && not(force_labels_repr):
-        return function_labels
+    if not(force_num_fs) and not(force_labels_repr):
+        return membership_functions, function_labels
     
     
-def validate_fs(x, y, membership_functions, function_labels, resolve_conflict, loss):
+def validate_fs(x, y, membership_functions, function_labels, resolve_conflict=None, loss=None):
     
     guessed_labels = np.array([function_labels[np.argmax([ e(t) for e in membership_functions ])] for t in x])
 
-                    correct_labels = np.array(y)
+    correct_labels = np.array(y)
                     
-                    return float(sum(guessed_labels == correct_labels)) / len(test_set)
+    return float(sum(guessed_labels == correct_labels)) / len(x)
+
+
+def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01, fuzzifier=LinearFuzzifier(), mu_function=None, force_num_fs=False, force_labels_repr=False, resolve_conflict=None, loss=None):
+    
+    '''
+    Iterate the procedure of clustering and membership with different combination of parameters
+    
+    - x: set of data point
+    - y: labels of the data points
+    - cs: array of tradeoff values
+    - sigmas: array of GaussianKernel parameters
+    - n: numbers of iteration
+    - dim: number of principal components to consider
+    - seed: seed for initialize the numpy random generator, if no seed is specified a random seed is choose
+    '''
+    
+    #get the wished principal components
+    values = get_principal_components(x,dim)
+    
+    #get the couples of c,sigma to test
+    couples = [(c,s) for s in sigmas for c in cs]
+    
+    #initialize the random generator with seed
+    if seed is None:
+        seed = np.random.randint(0,2**32)   
+    np.random.seed(seed)
+    
+    #initialize parameters for the iterations
+    test_accuracies={}
+    training_accuracies={}
+    all_accuracies={}
+    valid_iteration = 0
+    
+    #iterations
+    while(valid_iteration < iterations):
+        print '\n\nholdout iteration {}'.format(valid_iteration)
+        
+        #get a random permutation of data and divide it in train, validation and test set
+        train_index, validation_index, test_index = get_random_sets_by_index(len(values),(0.8,0.1,0.1))
+        train_set = values[[i for i in train_index]]
+        validation_set = values[[i for i in validation_index]]
+        test_set = values[[i for i in test_index]]
+        
+        # find the couple that have the best accuracy for this permutation
+        best_couples = [] #initialization of best couples
+        best_accuracy = -1 #initialization of best accuracy
+        
+        for (c, sigma) in couples:
+            print '\nmodel selection: trying parameters c={}, sigma={}'.format(c, sigma)
+            print 'starting clusterization'
+            
+            #clustering and compute a membership function for each cluster
+            try:
+                mf, clusters_index = learn_fs(train_set, c=c, 
+                             kernel=GaussianKernel(sigma), min_size=min_size, fuzzifier=fuzzifier)
+                
+                print 'first clusters', clusters_index
+            
+                #associate membership functions to labels
+                membership_functions, function_labels = associate_fs_to_labels(train_set, y[[i for i in train_index]], mf, force_num_fs=force_num_fs, force_labels_repr=force_labels_repr)
+                
+                print 'associated labels', function_labels
+
+                #calculate the accuracy on validation set
+                accuracy = validate_fs(validation_set, y[[i for i in validation_index]], 
+                    membership_functions, function_labels)
+                
+                print 'accuracy: ', accuracy
+                
+                all_accuracies[(valid_iteration, c, sigma)] = accuracy
+                
+                #check the best accuracy
+                if accuracy == best_accuracy:
+                    best_couples.append((c,sigma))
+                elif accuracy > best_accuracy:
+                    best_accuracy = accuracy
+                    best_couples = [(c,sigma)]
+                   
+            except ValueError as e:
+                print str(e)
+                continue
+        
+        if len(best_couples) > 0:
+            
+            #random choice between the couples with best accuracy
+            c_best, sigma_best = best_couples[np.random.randint(len(best_couples))]
+            print '\nbest couple', (c_best, sigma_best)
+            
+            #with the couple with the best accuracy infer the membership function merging train and validation set
+            new_train_set = np.vstack((train_set, validation_set))
+            new_train_index = np.hstack((train_index, validation_index))
+            
+            try:
+                mf, clusters_index = learn_fs(new_train_set, c=c_best, 
+                             kernel=GaussianKernel(sigma_best), min_size=min_size, fuzzifier=fuzzifier)
+                print 'first clusters', clusters_index
+            
+                #associate membership functions to labels
+                membership_functions, function_labels = associate_fs_to_labels(new_train_set, y[[i for i in new_train_index]], mf, force_num_fs=force_num_fs, force_labels_repr=force_num_fs)
+                
+                print 'associated labels', function_labels
+
+                #calculate the accuracy of the best couple on test set
+                accuracy = validate_fs(test_set, y[[i for i in test_index]], 
+                    membership_functions, function_labels)
+                
+                print 'test accuracy: ', accuracy
+                
+                test_accuracies[(valid_iteration, c_best, sigma_best)] = accuracy
+                
+                #calculate the accuracy of the best couple on training set
+                accuracy = validate_fs(new_train_set, y[[i for i in new_train_index]], 
+                    membership_functions, function_labels)
+                
+                print 'training accuracy: ', accuracy
+                
+                training_accuracies[(valid_iteration, c_best, sigma_best)] = accuracy
+                
+                #at this point the iteration is valid
+                valid_iteration = valid_iteration + 1
+                print 'iteration is valid'
+                
+            except ValueError as e:
+                print str(e)
+                continue
+            
+        else:
+            print 'no best couple found iteration invalid '
+            continue
+            
+    #build the results
+    results = {}
+    results['seed'] = seed
+    results['test-accuracies'] = test_accuracies
+    results['training-accuracies'] = training_accuracies
+    results['all-accuracies'] = all_accuracies
+    results['test-mean'] = np.array(test_accuracies.values()).mean()
+    results['test-std'] = np.array(test_accuracies.values()).std()
+    results['training-mean'] = np.array(training_accuracies.values()).mean()
+    results['training-std'] = np.array(training_accuracies.values()).std()
+    results['all-mean'] = np.array(all_accuracies.values()).mean()
+    results['all-std'] = np.array(all_accuracies.values()).std()
+
+    return results
+    
     
     
     
