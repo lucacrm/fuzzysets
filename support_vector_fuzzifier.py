@@ -1,6 +1,7 @@
 from support_vector_clustering import *
 from possibilearn import *
 from possibilearn.kernel import GaussianKernel
+import skfuzzy as fuzz
 
 def get_principal_components(data, n):
     
@@ -110,7 +111,11 @@ def learn_fs(x, c=1, kernel=GaussianKernel(1), min_size=0.01, fuzzifier=LinearFu
     #compute initial mus for compute the estimated memberships (update: do it with a fuzzifier)
     mus = [[1 if i in ci else 0 for i in range(x_len)] for ci in clusters_index ]
     
+    print 'inferring membership functions'
+    
     estimated_memberships = []
+    
+    gn = create_generator(x, len(x[0]))
 
     for i in range(len(clusters)):
         estimated_membership, _ = possibility_learn(x,
@@ -118,7 +123,7 @@ def learn_fs(x, c=1, kernel=GaussianKernel(1), min_size=0.01, fuzzifier=LinearFu
                                           c=c,
                                           k=kernel,
                                           fuzzifier=fuzzifier,
-                                          sample_generator=g)
+                                          sample_generator=gn)
         estimated_memberships.append(estimated_membership)
         
     if None in estimated_memberships:
@@ -319,6 +324,193 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
     results['test-std'] = np.array(test_accuracies.values()).std()
     results['training-mean'] = np.array(training_accuracies.values()).mean()
     results['training-std'] = np.array(training_accuracies.values()).std()
+    results['all-mean'] = np.array(all_accuracies.values()).mean()
+    results['all-std'] = np.array(all_accuracies.values()).std()
+
+    return results
+
+
+
+
+def iterate_tests_vs_fuzzycmeans(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01, fuzzifier=LinearFuzzifier(), mu_function=None, force_num_fs=False, force_labels_repr=False, resolve_conflict=None, loss=None):
+    
+    '''
+    Iterate the procedure of clustering and membership with different combination of parameters
+    
+    - x: set of data point
+    - y: labels of the data points
+    - cs: array of tradeoff values
+    - sigmas: array of GaussianKernel parameters
+    - n: numbers of iteration
+    - dim: number of principal components to consider
+    - seed: seed for initialize the numpy random generator, if no seed is specified a random seed is choose
+    '''
+    
+    #get the wished principal components
+    values = get_principal_components(x,dim)
+    
+    #get the couples of c,sigma to test
+    couples = [(c,s) for s in sigmas for c in cs]
+    
+    #initialize the random generator with seed
+    if seed is None:
+        seed = np.random.randint(0,2**32)   
+    np.random.seed(seed)
+    
+    #initialize parameters for the iterations
+    test_accuracies={}
+    training_accuracies={}
+    test_accuracies_cmeans={}
+    training_accuracies_cmeans={}
+    all_accuracies={}
+    valid_iteration = 0
+    
+    #iterations
+    while(valid_iteration < iterations):
+        print '\n\nholdout iteration {}'.format(valid_iteration)
+        
+        #get a random permutation of data and divide it in train, validation and test set
+        train_index, validation_index, test_index = get_random_sets_by_index(len(values),(0.8,0.1,0.1))
+        train_set = values[[i for i in train_index]]
+        validation_set = values[[i for i in validation_index]]
+        test_set = values[[i for i in test_index]]
+        
+        # find the couple that have the best accuracy for this permutation
+        best_couples = [] #initialization of best couples
+        best_accuracy = -1 #initialization of best accuracy
+        
+        for (c, sigma) in couples:
+            print '\nmodel selection: trying parameters c={}, sigma={}'.format(c, sigma)
+            print 'starting clusterization'
+            
+            #clustering and compute a membership function for each cluster
+            try:
+                mf, clusters_index = learn_fs(train_set, c=c, 
+                             kernel=GaussianKernel(sigma), min_size=min_size, fuzzifier=fuzzifier)
+                
+                print 'first clusters', clusters_index
+            
+                #associate membership functions to labels
+                membership_functions, function_labels = associate_fs_to_labels(train_set, y[[i for i in train_index]], mf, force_num_fs=force_num_fs, force_labels_repr=force_labels_repr)
+                
+                print 'associated labels', function_labels
+
+                #calculate the accuracy on validation set
+                accuracy = validate_fs(validation_set, y[[i for i in validation_index]], 
+                    membership_functions, function_labels)
+                
+                print 'accuracy: ', accuracy
+                
+                all_accuracies[(valid_iteration, c, sigma)] = accuracy
+                
+                #check the best accuracy
+                if accuracy == best_accuracy:
+                    best_couples.append((c,sigma))
+                elif accuracy > best_accuracy:
+                    best_accuracy = accuracy
+                    best_couples = [(c,sigma)]
+                   
+            except ValueError as e:
+                print str(e)
+                continue
+        
+        if len(best_couples) > 0:
+            
+            #random choice between the couples with best accuracy
+            c_best, sigma_best = best_couples[np.random.randint(len(best_couples))]
+            print '\nbest couple', (c_best, sigma_best)
+            
+            #with the couple with the best accuracy infer the membership function merging train and validation set
+            new_train_set = np.vstack((train_set, validation_set))
+            new_train_index = np.hstack((train_index, validation_index))
+            
+            try:
+                mf, clusters_index = learn_fs(new_train_set, c=c_best, 
+                             kernel=GaussianKernel(sigma_best), min_size=min_size, fuzzifier=fuzzifier)
+                print 'first clusters', clusters_index
+            
+                #associate membership functions to labels
+                membership_functions, function_labels = associate_fs_to_labels(new_train_set, y[[i for i in new_train_index]], mf, force_num_fs=force_num_fs, force_labels_repr=force_num_fs)
+                
+                print 'associated labels', function_labels
+
+                #calculate the accuracy of the best couple on test set
+                accuracy = validate_fs(test_set, y[[i for i in test_index]], 
+                    membership_functions, function_labels)
+                
+                print 'test accuracy: ', accuracy
+                
+                test_accuracies[(valid_iteration, c_best, sigma_best)] = accuracy
+                
+                #calculate the accuracy of the best couple on training set
+                accuracy = validate_fs(new_train_set, y[[i for i in new_train_index]], 
+                    membership_functions, function_labels)
+                
+                print 'training accuracy: ', accuracy
+                
+                training_accuracies[(valid_iteration, c_best, sigma_best)] = accuracy
+                
+                print 'starting model against cmeans'
+                
+                #vs fuzzycmeans
+                cntr, u, u0, d, jm, p, fpc = fuzz.cluster.cmeans(
+                    new_train_set.T, len(set(y)), 2, error=0.005, maxiter=1000, init=None)
+                
+                #assign a label to each cluster
+                cluster_membrships = cluster_membership = np.argmax(u, axis=0)
+                labelled_clusters = [l.mode()[0] for l in [pd.Series(ls) for ls in [[b for (a,b) in zip(cluster_membership,
+                                                y[[j for j in new_train_index]]) if a == i] for i in range(len(set(y)))]]]
+                
+                #compute accuracy on training set
+                accuracy = float(len(new_train_set[[labelled_clusters[i] for i in cluster_membership]
+                             == y[[i for i in new_train_index]]])) / float(len(new_train_set))
+                
+                training_accuracies_cmeans[(valid_iteration, c_best, sigma_best)] = accuracy
+                
+                print 'training accuracy with fuzzy cmeans: ', accuracy
+                
+                #predict on test set
+                u, u0, d, jm, p, fpc = fuzz.cluster.cmeans_predict(
+                    test_set.T, cntr, 2, error=0.005, maxiter=1000)
+                
+                #compute accuracy on test set
+                cluster_membership = np.argmax(u, axis=0)
+                
+                accuracy = float(len(test_set[[labelled_clusters[i] for i in cluster_membership]
+                             == y[[j for j in test_index]]])) / float(len(test_set))
+                
+                test_accuracies_cmeans[(valid_iteration, c_best, sigma_best)] = accuracy
+                
+                print 'test accuracy with fuzzy cmeans: ', accuracy
+                
+                #at this point the iteration is valid
+                valid_iteration = valid_iteration + 1
+                print 'iteration is valid'
+                
+            except ValueError as e:
+                print str(e)
+                continue
+            
+        else:
+            print 'no best couple found, iteration invalid '
+            continue
+            
+    #build the results
+    results = {}
+    results['seed'] = seed
+    results['test-accuracies'] = test_accuracies
+    results['training-accuracies'] = training_accuracies
+    results['test-accuracies-cmeans'] = test_accuracies_cmeans
+    results['training-accuracies-cmeans'] = training_accuracies_cmeans
+    results['all-accuracies'] = all_accuracies
+    results['test-mean'] = np.array(test_accuracies.values()).mean()
+    results['test-std'] = np.array(test_accuracies.values()).std()
+    results['training-mean'] = np.array(training_accuracies.values()).mean()
+    results['training-std'] = np.array(training_accuracies.values()).std()
+    results['test-mean-cmeans'] = np.array(test_accuracies_cmeans.values()).mean()
+    results['test-std-cmeans'] = np.array(test_accuracies_cmeans.values()).std()
+    results['training-mean-cmeans'] = np.array(training_accuracies_cmeans.values()).mean()
+    results['training-std-cmeans'] = np.array(training_accuracies_cmeans.values()).std()
     results['all-mean'] = np.array(all_accuracies.values()).mean()
     results['all-std'] = np.array(all_accuracies.values()).std()
 

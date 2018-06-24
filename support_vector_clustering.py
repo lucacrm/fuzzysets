@@ -15,8 +15,11 @@ def g(m):
 def create_generator(data_set, n_components):
     a = -4 #capire
     b = 8 #capire
+    
     def gen(m):
         return (a + np.random.random(n_components*m) * b).reshape((m, n_components))
+    
+    return gen
 
 def gr_membership_graded(estimated_membership, color_map):
     x = np.arange(-4, 4, .1)
