@@ -161,7 +161,7 @@ def associate_fs_to_labels(x, y, membership_functions, force_num_fs=False, force
     
     if force_labels_repr:
         if len(set(function_labels)) != n_labels:
-            raise ValueError('Some of the labels dont represent a cluster') #eccezione o forzare assegnamento a altre labels? fino adesso abbiamo fatto eccezione/test invalido
+            raise ValueError('Some of the labels dont represent a cluster')
             
         else:
             if force_num_fs:
@@ -177,16 +177,62 @@ def associate_fs_to_labels(x, y, membership_functions, force_num_fs=False, force
         return membership_functions, function_labels
     
     
-def validate_fs(x, y, membership_functions, function_labels, resolve_conflict=None, loss=None):
+def validate_fs(x, y, membership_functions, function_labels, resolve_conflict='random', loss=None):
     
-    guessed_labels = np.array([function_labels[np.argmax([ e(t) for e in membership_functions ])] for t in x])
+    def best_choice(candidates, function_labels, real_labels):
+        choices = []
+        for i in range(len(candidates)):
+            found = False
+            for j in range (len(candidates[i])):
+                if function_labels[candidates[i][j]] == real_labels[i] and (not found) :
+                    choices.append(function_labels[candidates[i][j]])
+                    found = True
+            if not found:
+                choices.append(function_labels[np.random.choice(candidates[i])])
+                
+        return np.array(choices)
+    
+    
+    def worst_choice(candidates, function_labels, real_labels):
+        choices = []
+        for i in range(len(candidates)):
+            found = False
+            for j in range (len(candidates[i])):
+                if function_labels[candidates[i][j]] != real_labels[i] and (not found) :
+                    choices.append(function_labels[candidates[i][j]])
+                    found = True
+            if not found:
+                choices.append(function_labels[np.random.choice(candidates[i])])
+                
+        return np.array(choices)
+                    
+            
+    function_labels = np.array(function_labels)
+    results = np.array([[f(p) for f in membership_functions] for p in x])
+    maxs = np.array([np.max(r) for r in results])
+    results = [pd.Series(r) for r in results]
+    candidates = []
+    for i in range(len(results)):
+        candidates.append(results[i][results[i]==maxs[i]].keys().values)
+        
+    if resolve_conflict == 'random':
+        guessed_labels = function_labels[[np.random.choice(c) for c in candidates]]
+          
+    elif resolve_conflict == 'best':
+        guessed_labels = best_choice(candidates,function_labels,y)
+        
+    elif resolve_conflict == 'worst':
+        guessed_labels = worst_choice(c,function_labels,y)
+    
+    else:
+        raise ValueError('the value of resolve_conflict must be random, best or worst')
 
     correct_labels = np.array(y)
                     
     return float(sum(guessed_labels == correct_labels)) / len(x)
 
 
-def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01, fuzzifier=LinearFuzzifier(), mu_function=None, force_num_fs=False, force_labels_repr=False, resolve_conflict=None, loss=None):
+def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01, fuzzifier=LinearFuzzifier(), mu_function=None, force_num_fs=False, force_labels_repr=False, resolve_conflict='random', loss=None):
     
     '''
     Iterate the procedure of clustering and membership with different combination of parameters
@@ -332,7 +378,7 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
 
 
 
-def iterate_tests_vs_fuzzycmeans(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01, fuzzifier=LinearFuzzifier(), mu_function=None, force_num_fs=False, force_labels_repr=False, resolve_conflict=None, loss=None):
+def iterate_tests_vs_fuzzycmeans(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01, fuzzifier=LinearFuzzifier(), mu_function=None, force_num_fs=False, force_labels_repr=False, resolve_conflict='random', loss=None):
     
     '''
     Iterate the procedure of clustering and membership with different combination of parameters
