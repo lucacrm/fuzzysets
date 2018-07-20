@@ -2,6 +2,7 @@ from support_vector_clustering import *
 from possibilearn import *
 from possibilearn.kernel import GaussianKernel
 import skfuzzy as fuzz
+from muzzifiers import *
 
 def get_principal_components(data, n):
     
@@ -82,7 +83,7 @@ def get_different_labels(labels):
     return ok_index
 
 
-def learn_fs(x, c=1, kernel=GaussianKernel(1), min_size=0.01, fuzzifier=LinearFuzzifier(), mu_function=None):
+def learn_fs(x, c=1, kernel=GaussianKernel(1), min_size=0.01, fuzzifier=LinearFuzzifier(), muzzifier=BinaryMuzzifier()):
 
     '''
     Divides a set of data into clusters and it computes a membership function for all found clusters
@@ -107,15 +108,17 @@ def learn_fs(x, c=1, kernel=GaussianKernel(1), min_size=0.01, fuzzifier=LinearFu
     clusters_index.sort(key = lambda x: -len(x)) #sort clusters by len in order to get bigger cluster in the associate_fs_to_labels function with force parameters set to true
 
     clusters = [x[cl] for cl in clusters_index] #clusterize real data (data of x)
+    print 'clusters by index ', clusters_index
+    print 'number of clusters ', len(clusters)
 
-    #compute initial mus for compute the estimated memberships (update: do it with a fuzzifier)
-    mus = [[1 if i in ci else 0 for i in range(x_len)] for ci in clusters_index ]
+    #compute initial mus for compute the estimated memberships
+    gn = create_generator(x, len(x[0]))
     
+    mus = muzzifier.get_mus(x, clusters, kernel, c, gn)
+    #print 'mus ', mus
     print 'inferring membership functions'
     
     estimated_memberships = []
-    
-    gn = create_generator(x, len(x[0]))
 
     for i in range(len(clusters)):
         estimated_membership, _ = possibility_learn(x,
@@ -146,16 +149,21 @@ def associate_fs_to_labels(x, y, membership_functions, force_num_fs=False, force
     '''
     
     labels = set(y)
+    #print 'possible labels ', labels
     n_labels = len(labels)
     
     if (len(membership_functions) < n_labels) and force_num_fs:
             raise ValueError('Number of functions is less than the number of labels, cant force the number of functions')
     
     fuzzy_memberships = [[mf(p) for mf in membership_functions] for p in x]
+    #print 'fuzzy memberships ', fuzzy_memberships
     
     best_memberships = [np.argmax(m) for m in fuzzy_memberships]
+    #print "best memberships per points ", best_memberships
     
     labels_founded = np.array([ [ y[i] for i in range(len(y)) if best_memberships[i] == k ] for k in range(len(membership_functions)) ])
+    
+    #print 'labels founded ', labels_founded
     
     function_labels = [pd.Series(lf).mode()[0] for lf in labels_founded]
     
@@ -205,8 +213,7 @@ def validate_fs(x, y, membership_functions, function_labels, resolve_conflict='r
                 choices.append(function_labels[np.random.choice(candidates[i])])
                 
         return np.array(choices)
-                    
-            
+                           
     function_labels = np.array(function_labels)
     results = np.array([[f(p) for f in membership_functions] for p in x])
     maxs = np.array([np.max(r) for r in results])
@@ -232,7 +239,7 @@ def validate_fs(x, y, membership_functions, function_labels, resolve_conflict='r
     return float(sum(guessed_labels == correct_labels)) / len(x)
 
 
-def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01, fuzzifier=LinearFuzzifier(), mu_function=None, force_num_fs=False, force_labels_repr=False, resolve_conflict='random', loss=None):
+def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01, fuzzifier=LinearFuzzifier(), muzzifier=BinaryMuzzifier(), force_num_fs=False, force_labels_repr=False, resolve_conflict='random', loss=None):
     
     '''
     Iterate the procedure of clustering and membership with different combination of parameters
@@ -284,9 +291,9 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
             #clustering and compute a membership function for each cluster
             try:
                 mf, clusters_index = learn_fs(train_set, c=c, 
-                             kernel=GaussianKernel(sigma), min_size=min_size, fuzzifier=fuzzifier)
+                             kernel=GaussianKernel(sigma), min_size=min_size, fuzzifier=fuzzifier, muzzifier=muzzifier)
                 
-                print 'first clusters', clusters_index
+                #print 'clusters with index ', clusters_index
             
                 #associate membership functions to labels
                 membership_functions, function_labels = associate_fs_to_labels(train_set, y[[i for i in train_index]], mf, force_num_fs=force_num_fs, force_labels_repr=force_labels_repr)
@@ -377,20 +384,8 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
 
 
 
-
+'''
 def iterate_tests_vs_fuzzycmeans(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01, fuzzifier=LinearFuzzifier(), mu_function=None, force_num_fs=False, force_labels_repr=False, resolve_conflict='random', loss=None):
-    
-    '''
-    Iterate the procedure of clustering and membership with different combination of parameters
-    
-    - x: set of data point
-    - y: labels of the data points
-    - cs: array of tradeoff values
-    - sigmas: array of GaussianKernel parameters
-    - n: numbers of iteration
-    - dim: number of principal components to consider
-    - seed: seed for initialize the numpy random generator, if no seed is specified a random seed is choose
-    '''
     
     #get the wished principal components
     values = get_principal_components(x,dim)
@@ -561,3 +556,5 @@ def iterate_tests_vs_fuzzycmeans(x, y, cs, sigmas, iterations, dim=2, seed=None,
     results['all-std'] = np.array(all_accuracies.values()).std()
 
     return results
+    
+'''
