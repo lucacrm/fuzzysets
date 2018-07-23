@@ -115,6 +115,8 @@ def learn_fs(x, c=1, kernel=GaussianKernel(1), min_size=0.01, fuzzifier=LinearFu
     gn = create_generator(x, len(x[0]))
     
     mus = muzzifier.get_mus(x, clusters, kernel, c, gn)
+    if None in mus:
+        raise ValueError('Unable to calculate mus')
     #print 'mus ', mus
     print 'inferring membership functions'
     
@@ -162,6 +164,10 @@ def associate_fs_to_labels(x, y, membership_functions, force_num_fs=False, force
     #print "best memberships per points ", best_memberships
     
     labels_founded = np.array([ [ y[i] for i in range(len(y)) if best_memberships[i] == k ] for k in range(len(membership_functions)) ])
+    
+    #exclude subclusters / associate same clusters
+    membership_functions = [x[0] for x in zip(membership_functions,labels_founded) if len(x[1])>0]
+    labels_founded = [x for x in labels_founded if len(x)>0]
     
     #print 'labels founded ', labels_founded
     

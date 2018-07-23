@@ -204,6 +204,16 @@ def squared_radius_and_distance(x, b_opt, index_sv, k, c, mean=True):
     - d is the function computing the squared distance
     '''
     
+    '''
+    print 'b_opt ', b_opt
+    print 'index_sv ', index_sv
+    print 'k ', k
+    print 'mean ', mean
+    '''
+ 
+    if(len(index_sv) == 0):
+        raise ValueError('No support vector founded')
+    
     gram = np.array(np.array([[k.compute(x1, x2) for x1 in x] for x2 in x]))
     gram_term = np.array(b_opt).dot(gram.dot(b_opt))
     d = lambda x_new: distance_from_center(x_new, x, b_opt, k, gram_term)

@@ -54,32 +54,34 @@ class LinearMuzzifier(BaseMuzzifier):
             
             betas = solve_wolf(cl, kernel, c)
     
-            index_bsv = []
             index_sv = []
-            index_v = []
 
             for i in range(len(betas)):
                 if 0 < betas[i] < c:
                     index_sv.append(i)
-
-            radius, d = squared_radius_and_distance(cl, betas, index_sv, kernel, c, mean=False)
+            #print 'index_sv ', index_sv
             
-            #print 'radius is ', radius
+            if(len(index_sv)>0):
+                radius, d = squared_radius_and_distance(cl, betas, index_sv, kernel, c, mean=False)
             
-            max_distance = np.max(map(d,sample))
-            #print 'max distance is ', max_distance
+                #print 'radius is ', radius
             
-            '''
-            for point in x:
-                d_from_cl = d(point)
-                print 'point ', point
-                print 'distance from cluster is ', d(point)
-            '''
+                max_distance = np.max(map(d,sample))
+                #print 'max distance is ', max_distance
             
-            curr_mu = [1 if d(point) <= radius else 0 if d(point) >= max_distance 
-                       else (max_distance - d(point))/(max_distance - radius) for point in x]
+                '''
+                for point in x:
+                    d_from_cl = d(point)
+                    print 'point ', point
+                    print 'distance from cluster is ', d(point)
+                '''
             
-            #print '\ncurrent mus ', curr_mu
+                curr_mu = [1 if d(point) <= radius else 0 if d(point) >= max_distance 
+                           else (max_distance - d(point))/(max_distance - radius) for point in x]
+            
+                #print '\ncurrent mus ', curr_mu
+            else:
+                curr_mu = None
             
             mus.append(curr_mu)
             
