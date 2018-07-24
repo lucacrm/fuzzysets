@@ -241,11 +241,18 @@ def validate_fs(x, y, membership_functions, function_labels, resolve_conflict='r
         raise ValueError('the value of resolve_conflict must be random, best or worst')
 
     correct_labels = np.array(y)
+    
+    acc = float(sum(guessed_labels == correct_labels)) / len(x)
                     
-    return float(sum(guessed_labels == correct_labels)) / len(x)
+    if loss is None:
+        return acc, None
+    else:
+        lss = loss(x,y,guessed_labels)
+        return acc, lss
 
 
-def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01, fuzzifier=LinearFuzzifier(), muzzifier=BinaryMuzzifier(), force_num_fs=False, force_labels_repr=False, resolve_conflict='random', loss=None):
+def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01, fuzzifier=LinearFuzzifier(), muzzifier=BinaryMuzzifier(), force_num_fs=False, force_labels_repr=False, resolve_conflict='random', loss=None, 
+                  name='ITERATE TEST'):
     
     '''
     Iterate the procedure of clustering and membership with different combination of parameters
@@ -273,7 +280,10 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
     #initialize parameters for the iterations
     test_accuracies={}
     training_accuracies={}
+    test_losses={}
+    training_losses={}
     all_accuracies={}
+    all_losses={}
     valid_iteration = 0
     
     #iterations
@@ -307,12 +317,13 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
                 print 'associated labels', function_labels
 
                 #calculate the accuracy on validation set
-                accuracy = validate_fs(validation_set, y[[i for i in validation_index]], 
+                accuracy, lss = validate_fs(validation_set, y[[i for i in validation_index]], 
                     membership_functions, function_labels)
                 
                 print 'accuracy: ', accuracy
                 
                 all_accuracies[(valid_iteration, c, sigma)] = accuracy
+                all_losses[(valid_iteration, c, sigma)] = lss
                 
                 #check the best accuracy
                 if accuracy == best_accuracy:
@@ -346,20 +357,22 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
                 print 'associated labels', function_labels
 
                 #calculate the accuracy of the best couple on test set
-                accuracy = validate_fs(test_set, y[[i for i in test_index]], 
+                accuracy, lss = validate_fs(test_set, y[[i for i in test_index]], 
                     membership_functions, function_labels)
                 
                 print 'test accuracy: ', accuracy
                 
                 test_accuracies[(valid_iteration, c_best, sigma_best)] = accuracy
+                test_losses[(valid_iteration, c_best, sigma_best)] = lss
                 
                 #calculate the accuracy of the best couple on training set
-                accuracy = validate_fs(new_train_set, y[[i for i in new_train_index]], 
+                accuracy, lss = validate_fs(new_train_set, y[[i for i in new_train_index]], 
                     membership_functions, function_labels)
                 
                 print 'training accuracy: ', accuracy
                 
                 training_accuracies[(valid_iteration, c_best, sigma_best)] = accuracy
+                training_losses[(valid_iteration, c_best, sigma_best)] = accuracy
                 
                 #at this point the iteration is valid
                 valid_iteration = valid_iteration + 1
@@ -375,21 +388,74 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
             
     #build the results
     results = {}
+    results['name'] = name
+    results['cs'] = cs
+    results['sigmas'] = sigmas
+    results['iterations']= iterations
+    results['dimensions'] = dim 
+    results['min_size'] = min_size
+    results['dataset-length'] = len(x)
+    results['muzzifier'] = muzzifier.name
+    results['fuzzifier'] = fuzzifier.name
+    results['force_num_fs'] = force_num_fs
+    results['force_labels_repr'] = force_labels_repr
+    results['resolve_conflict'] = resolve_conflict
     results['seed'] = seed
     results['test-accuracies'] = test_accuracies
     results['training-accuracies'] = training_accuracies
     results['all-accuracies'] = all_accuracies
-    results['test-mean'] = np.array(test_accuracies.values()).mean()
-    results['test-std'] = np.array(test_accuracies.values()).std()
-    results['training-mean'] = np.array(training_accuracies.values()).mean()
-    results['training-std'] = np.array(training_accuracies.values()).std()
-    results['all-mean'] = np.array(all_accuracies.values()).mean()
-    results['all-std'] = np.array(all_accuracies.values()).std()
+    results['test-accuracy-mean'] = np.array(test_accuracies.values()).mean()
+    results['test-accuracy-std'] = np.array(test_accuracies.values()).std()
+    results['training-accuracy-mean'] = np.array(training_accuracies.values()).mean()
+    results['training-accuracy-std'] = np.array(training_accuracies.values()).std()
+    results['all-accuracy-mean'] = np.array(all_accuracies.values()).mean()
+    results['all-accuracy-std'] = np.array(all_accuracies.values()).std()
+    '''
+    results['test-losses'] = test_losses
+    results['training-losses'] = training_losses
+    results['all-losses'] = all_losses
+    results['test-loss-mean'] = np.array(test_losses.values()).mean()
+    results['test-loss-std'] = np.array(test_losses.values()).std()
+    results['training-loss-mean'] = np.array(training_losses.values()).mean()
+    results['training-loss-std'] = np.array(training_losses.values()).std()
+    results['all-loss-mean'] = np.array(all_losses.values()).mean()
+    results['all-loss-std'] = np.array(all_losses.values()).std()
+    '''
 
     return results
 
-
-
+def pretty_results(results):
+    
+    pretty = results['name']+', number of iterations: '+str(results['iterations'])+'\n\n'
+    pretty = pretty + 'Parameters info\n'
+    pretty = pretty + 'Tradeoffs parameter: '+str(results['cs'])+'\n'
+    pretty = pretty + 'Gaussian kernel sigmas: '+str(results['sigmas'])+'\n'
+    pretty = pretty + 'Number of principal dimension considerated: '+str(results['dimensions'])+'\n'
+    pretty = pretty + 'Dataset length: '+str(results['dataset-length'])+'\n\n'
+    pretty = pretty + 'Clusterization info\n'
+    d = int(results['dataset-length']*results['min_size'])
+    pretty = pretty + 'Minimum size of a cluster: in perc: '+str(results['min_size'])+', in int: '+str(d+1)+'\n'
+    pretty = pretty + 'Type of mu: '+results['muzzifier']+'\n'
+    pretty = pretty + 'Fuzzifier: '+results['fuzzifier']+'\n'
+    pretty = pretty + 'Cluster to label info\n'
+    pretty = pretty + 'Force the number of cluster to be the number of different labels: '+str(results['force_num_fs'])+'\n'
+    pretty = pretty + 'Force the labels to be always represent by a cluster: '+str(results['force_num_fs'])+'\n\n'
+    pretty = pretty + 'Validation info\n'
+    pretty = pretty + 'Conflict resolution: '+results['resolve_conflict']+'\n\n\n'
+    pretty = pretty + 'RESULTS\n\n'
+    pretty = pretty + 'On TEST set\n\n'
+    pretty = pretty + 'Accuracy on test set for every iteration (n_of_the_iter, best_c, best_sigma):\n'
+    pretty = pretty + str(results['test-accuracies'])+'\n'
+    pretty = pretty + 'Accuracy mean :'+str(results['test-accuracy-mean'])+'\n'
+    pretty = pretty + 'Std deviation :'+str(results['test-accuracy-std'])+'\n\n'
+    pretty = pretty + 'On TRAINING set\n\n'
+    pretty = pretty + 'Accuracy on training set for every iteration (n_of_the_iter, c, sigma):\n'
+    pretty = pretty + str(results['training-accuracies'])+'\n'
+    pretty = pretty + 'Accuracy mean :'+str(results['training-accuracy-mean'])+'\n'
+    pretty = pretty + 'Std deviation :'+str(results['training-accuracy-std'])+'\n\n'
+    
+    return pretty
+    
 '''
 def iterate_tests_vs_fuzzycmeans(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01, fuzzifier=LinearFuzzifier(), mu_function=None, force_num_fs=False, force_labels_repr=False, resolve_conflict='random', loss=None):
     
