@@ -3,6 +3,7 @@ from possibilearn import *
 from possibilearn.kernel import GaussianKernel
 import skfuzzy as fuzz
 from muzzifiers import *
+import matplotlib.pyplot as plt
 
 def get_principal_components(data, n):
     
@@ -190,8 +191,10 @@ def associate_fs_to_labels(x, y, membership_functions, force_num_fs=False, force
     if not(force_num_fs) and not(force_labels_repr):
         return membership_functions, function_labels
     
+def binary_loss(x,correct_labels,guessed_labels):
+    return float(sum(guessed_labels != correct_labels)) / len(x)
     
-def validate_fs(x, y, membership_functions, function_labels, resolve_conflict='random', loss=None):
+def validate_fs(x, y, membership_functions, function_labels, resolve_conflict='random', loss=binary_loss):
     
     def best_choice(candidates, function_labels, real_labels):
         choices = []
@@ -247,12 +250,11 @@ def validate_fs(x, y, membership_functions, function_labels, resolve_conflict='r
     if loss is None:
         return acc, None
     else:
-        lss = loss(x,y,guessed_labels)
+        lss = loss(x,correct_labels,guessed_labels)
         return acc, lss
-
-
-def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01, fuzzifier=LinearFuzzifier(), muzzifier=BinaryMuzzifier(), force_num_fs=False, force_labels_repr=False, resolve_conflict='random', loss=None, 
-                  name='ITERATE TEST'):
+    
+def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01, fuzzifier=LinearFuzzifier(), muzzifier=BinaryMuzzifier(), force_num_fs=False, force_labels_repr=False, resolve_conflict='random', loss=binary_loss, 
+                  name='ITERATE TESTS', save_graph=False):
     
     '''
     Iterate the procedure of clustering and membership with different combination of parameters
@@ -286,12 +288,15 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
     all_losses={}
     valid_iteration = 0
     
+    #associate every label to a color for graphs consistency
+    colors, colors_map = associate_labels_to_colors(y)
+    
     #iterations
     while(valid_iteration < iterations):
         print '\n\nholdout iteration {}'.format(valid_iteration)
         
         #get a random permutation of data and divide it in train, validation and test set
-        train_index, validation_index, test_index = get_random_sets_by_index(len(values),(0.8,0.1,0.1))
+        train_index, validation_index, test_index = get_random_sets_by_index(len(values),(0.8,0.1,0.1)) #perc as a parameter?
         train_set = values[[i for i in train_index]]
         validation_set = values[[i for i in validation_index]]
         test_set = values[[i for i in test_index]]
@@ -318,7 +323,7 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
 
                 #calculate the accuracy on validation set
                 accuracy, lss = validate_fs(validation_set, y[[i for i in validation_index]], 
-                    membership_functions, function_labels)
+                    membership_functions, function_labels, loss=loss)
                 
                 print 'accuracy: ', accuracy
                 
@@ -355,10 +360,28 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
                 membership_functions, function_labels = associate_fs_to_labels(new_train_set, y[[i for i in new_train_index]], mf, force_num_fs=force_num_fs, force_labels_repr=force_num_fs)
                 
                 print 'associated labels', function_labels
+                
+                #graphs
+                if save_graph and dim==2:
+                    
+                    gr_cluster_division(new_train_set, y[[i for i in new_train_index]],
+                                        membership_functions, function_labels, valid_iteration, colors, sigma_best, c_best)
+                    gr_save(name+"_"+str(valid_iteration)+"it_clusters_division")
+                    
+                    for (f,l,j) in zip(membership_functions, function_labels, range(len(function_labels))):
+                        
+                        gr_membership_contour(new_train_set, y[[i for i in new_train_index]], f, l, j,
+                                              colors, sigma_best, c_best)
+                        gr_save(name+"_"+str(valid_iteration)+"it_cluster_"+str(j)+"_"+l+"_"+"contour")
+                        
+                        gr_membership_graded(new_train_set, y[[i for i in new_train_index]], f, l, j,
+                                             colors, colors_map, sigma_best, c_best)
+                        gr_save(name+"_"+str(valid_iteration)+"it_cluster_"+str(j)+"_"+l+"_"+"heat")
+                        
 
                 #calculate the accuracy of the best couple on test set
                 accuracy, lss = validate_fs(test_set, y[[i for i in test_index]], 
-                    membership_functions, function_labels)
+                    membership_functions, function_labels, loss=loss)
                 
                 print 'test accuracy: ', accuracy
                 
@@ -372,7 +395,7 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
                 print 'training accuracy: ', accuracy
                 
                 training_accuracies[(valid_iteration, c_best, sigma_best)] = accuracy
-                training_losses[(valid_iteration, c_best, sigma_best)] = accuracy
+                training_losses[(valid_iteration, c_best, sigma_best)] = lss
                 
                 #at this point the iteration is valid
                 valid_iteration = valid_iteration + 1
@@ -410,18 +433,28 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
     results['training-accuracy-std'] = np.array(training_accuracies.values()).std()
     results['all-accuracy-mean'] = np.array(all_accuracies.values()).mean()
     results['all-accuracy-std'] = np.array(all_accuracies.values()).std()
-    '''
-    results['test-losses'] = test_losses
-    results['training-losses'] = training_losses
-    results['all-losses'] = all_losses
-    results['test-loss-mean'] = np.array(test_losses.values()).mean()
-    results['test-loss-std'] = np.array(test_losses.values()).std()
-    results['training-loss-mean'] = np.array(training_losses.values()).mean()
-    results['training-loss-std'] = np.array(training_losses.values()).std()
-    results['all-loss-mean'] = np.array(all_losses.values()).mean()
-    results['all-loss-std'] = np.array(all_losses.values()).std()
-    '''
-
+    
+    if loss is None:
+        results['test-losses'] = 'None'
+        results['training-losses'] = 'None'
+        results['all-losses'] = 'None'
+        results['test-loss-mean'] = 'None'
+        results['test-loss-std'] = 'None'
+        results['training-loss-mean'] = 'None'
+        results['training-loss-std'] = 'None'
+        results['all-loss-mean'] = 'None'
+        results['all-loss-std'] = 'None'
+    else:
+        results['test-losses'] = test_losses
+        results['training-losses'] = training_losses
+        results['all-losses'] = all_losses
+        results['test-loss-mean'] = np.array(test_losses.values()).mean()
+        results['test-loss-std'] = np.array(test_losses.values()).std()
+        results['training-loss-mean'] = np.array(training_losses.values()).mean()
+        results['training-loss-std'] = np.array(training_losses.values()).std()
+        results['all-loss-mean'] = np.array(all_losses.values()).mean()
+        results['all-loss-std'] = np.array(all_losses.values()).std()
+    
     return results
 
 def pretty_results(results):
@@ -445,16 +478,143 @@ def pretty_results(results):
     pretty = pretty + 'RESULTS\n\n'
     pretty = pretty + 'On TEST set\n\n'
     pretty = pretty + 'Accuracy on test set for every iteration (n_of_the_iter, best_c, best_sigma):\n'
-    pretty = pretty + str(results['test-accuracies'])+'\n'
-    pretty = pretty + 'Accuracy mean :'+str(results['test-accuracy-mean'])+'\n'
-    pretty = pretty + 'Std deviation :'+str(results['test-accuracy-std'])+'\n\n'
+    
+    d = sorted(results['test-accuracies'])
+    for x in d:
+        pretty = pretty + str(x) + ': ' +  str(results['test-accuracies'][x]) +'\n'
+        
+    pretty = pretty + '\nLoss on test set for every iteration (n_of_the_iter, best_c, best_sigma):\n'
+        
+    d = sorted(results['test-losses'])
+    for x in d:
+        pretty = pretty + str(x) + ': ' +  str(results['test-losses'][x]) +'\n'
+        
+    pretty = pretty + '\nAccuracy mean :'+str(results['test-accuracy-mean'])+'\n'
+    pretty = pretty + 'Std deviation :'+str(results['test-accuracy-std'])+'\n'
+    pretty = pretty + 'Loss mean :'+str(results['test-loss-mean'])+'\n'
+    pretty = pretty + 'Std deviation :'+str(results['test-loss-std'])+'\n\n'
+    
     pretty = pretty + 'On TRAINING set\n\n'
     pretty = pretty + 'Accuracy on training set for every iteration (n_of_the_iter, c, sigma):\n'
-    pretty = pretty + str(results['training-accuracies'])+'\n'
-    pretty = pretty + 'Accuracy mean :'+str(results['training-accuracy-mean'])+'\n'
-    pretty = pretty + 'Std deviation :'+str(results['training-accuracy-std'])+'\n\n'
+    
+    d = sorted(results['training-accuracies'])
+    for x in d:
+        pretty = pretty + str(x) + ': ' +  str(results['training-accuracies'][x]) +'\n'
+        
+    pretty = pretty + 'Loss on training set for every iteration (n_of_the_iter, best_c, best_sigma):\n'
+        
+    d = sorted(results['training-losses'])
+    for x in d:
+        pretty = pretty + str(x) + ': ' + str(results['training-losses'][x]) +'\n'
+    
+    pretty = pretty + '\nAccuracy mean :'+str(results['training-accuracy-mean'])+'\n'
+    pretty = pretty + 'Std deviation :'+str(results['training-accuracy-std'])+'\n'
+    pretty = pretty + 'Loss mean :'+str(results['training-loss-mean'])+'\n'
+    pretty = pretty + 'Std deviation :'+str(results['training-loss-std'])+'\n\n'
+    
+    pretty = pretty + 'On ALL the sets\n\n'
+    pretty = pretty + 'Accuracy on all the set for every iteration, for every couple c,sigma (n_of_the_iter, c, sigma):\n'
+    
+    d = sorted(results['all-accuracies'])
+    for x in d:
+        pretty = pretty + str(x) + ': ' +  str(results['all-accuracies'][x]) +'\n'
+        
+    pretty = pretty + '\nLoss on all the set for every iteration, for every couple c,sigma (n_of_the_iter, best_c, best_sigma):\n'
+        
+    d = sorted(results['all-losses'])
+    for x in d:
+        pretty = pretty + str(x) + ': ' + str(results['all-losses'][x]) +'\n'
+    
+    pretty = pretty + '\nAccuracy mean :'+str(results['all-accuracy-mean'])+'\n'
+    pretty = pretty + 'Std deviation :'+str(results['all-accuracy-std'])+'\n'
+    pretty = pretty + 'Loss mean :'+str(results['all-loss-mean'])+'\n'
+    pretty = pretty + 'Std deviation :'+str(results['all-loss-std'])+'\n\n'
     
     return pretty
+
+def associate_labels_to_colors(y):
+
+    d1={}
+    d2={}
+    color_list = ['b','g','r','c','m','y','k']
+    color_map_list = [cm.Blues, cm.Greens, cm.Reds]
+    set_y = sorted(list(set(y)))
+    for (a,b) in zip(set_y,color_list):
+        d1[a] = b
+    for (c,d) in zip(set_y,color_map_list):
+        d2[c] = d
+    return d1, d2
+
+def gr_dataset(x, y, colors): 
+    for e in colors:
+        plt.scatter(x[y==e, 0],
+                    x[y==e, 1],
+                    label=e,
+                    c=colors[e])
+    
+def gr_cluster_division(x, y, membership_functions, function_labels, i, colors, sigma, c):
+    
+    fig = plt.figure(figsize=(12,4))
+    plt.text(-4,-6,"sigma: "+str(sigma)+", c: "+str(c))
+    plt.suptitle('Cluster division '+str(i))
+    
+    plt.subplot(121)
+    gr_dataset(x, y, colors)
+    plt.title('Dataset by known labels')
+    plt.legend()
+    plt.xlim(-4,4)
+    plt.ylim(-4,4)
+        
+    function_labels = np.array(function_labels)
+    new_y = function_labels[[np.argmax([mf(p) for mf in membership_functions]) for p in x]]
+    
+    plt.subplot(122)
+    gr_dataset(x, new_y, colors)
+    plt.title('Dataset by obtained clusters')
+    plt.legend()
+    plt.xlim(-4,4)
+    plt.ylim(-4,4)
+    
+def gr_membership_contour(x, y, estimated_membership, label, i, colors, sigma, c):
+    
+    gr_dataset(x, y, colors)
+ 
+    plt.title('CLUSTER '+str(i)+'  '+label)
+    plt.text(-4,-6,"sigma: "+str(sigma)+", c: "+str(c))
+    
+    a = np.arange(-4, 4, .1)
+    b = np.arange(-4, 4, .1)
+    A, B = np.meshgrid(a, b)
+    zs = np.array([estimated_membership((a, b))
+                   for a,b in zip(np.ravel(A), np.ravel(B))])
+    Z = zs.reshape(A.shape)
+
+    membership_contour = plt.contour(A, B, Z,
+                                     levels=(.1, .3, .5, .7, .8, .9, .95), colors='k')
+    plt.clabel(membership_contour, inline=1)
+    plt.legend()
+
+def gr_membership_graded(x, y, estimated_membership, label, i, colors, colors_map, sigma, c):
+    
+    gr_dataset(x, y, colors)
+    
+    plt.title('CLUSTER '+str(i)+'  '+label)
+    plt.text(-4,-6,"sigma: "+str(sigma)+", c: "+str(c))
+    
+    a = np.arange(-4, 4, .1)
+    b = np.arange(-4, 4, .1)
+    A, B = np.meshgrid(a, b)
+    zs = np.array([estimated_membership((a, b))
+                   for a,b in zip(np.ravel(A), np.ravel(B))])
+    Z = zs.reshape(A.shape)
+    plt.imshow(Z, interpolation='bilinear', origin='lower',
+           cmap=colors_map[label], alpha=0.99, extent=(-4, 4, -4, 4))
+    plt.legend()
+    
+def gr_save(filename):
+    plt.savefig(filename+".png")
+    plt.clf()
+    
     
 '''
 def iterate_tests_vs_fuzzycmeans(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01, fuzzifier=LinearFuzzifier(), mu_function=None, force_num_fs=False, force_labels_repr=False, resolve_conflict='random', loss=None):

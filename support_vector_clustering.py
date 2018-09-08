@@ -64,33 +64,6 @@ def get_different_clusters(clusters, clusters_index, clusters_labels):
             l.append(clusters_labels[j])
     return c, i, l
 
-def print_graph(values, labels):
-    
-    import matplotlib.pyplot as plt
-
-    values = np.array(values)
-    
-    fig, axs = plt.subplots(1, 2,
-    sharey=True, figsize=(15, 4))
-    fig.subplots_adjust(wspace=0.2)
-
-    axs[0].scatter(values[:,0],values[:,1]) #grafico di tutti i punti, senza appartenenza
-    axs[0].set_xlim(-4,4)
-    
-    for i in range(len(values)):
-        if labels[i] == 'Iris-setosa':
-            axs[1].plot(values[i][0],values[i][1],'bo')
-        elif labels[i] == 'Iris-virginica':
-            axs[1].plot(values[i][0],values[i][1],'go')
-        elif labels[i] == 'Iris-versicolor':
-            axs[1].plot(values[i][0],values[i][1],'ro')
-        else:
-            axs[1].plot(values[i][0],values[i][1],'b^')
-    
-    axs[1].set_xlim(-4,4)   
- 
-    plt.show()
-
 def get_a_sample(x, n):
     return (np.vstack([iris_values_2d[:n], iris_values_2d[50:50+n], iris_values_2d[100:100+n]]) , 
             np.vstack([iris_labels[:n], iris_labels[50:50+n], iris_labels[100:100+n]]).ravel() )
