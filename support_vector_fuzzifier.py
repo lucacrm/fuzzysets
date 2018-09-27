@@ -84,7 +84,7 @@ def get_different_labels(labels):
     return ok_index
 
 
-def learn_fs(x, c=1, kernel=GaussianKernel(1), min_size=0.01, fuzzifier=LinearFuzzifier(), muzzifier=BinaryMuzzifier()):
+def learn_fs(x, c=1, c1=1, kernel=GaussianKernel(1), min_size=0.01, fuzzifier=LinearFuzzifier(), muzzifier=BinaryMuzzifier()):
 
     '''
     Divides a set of data into clusters and it computes a membership function for all found clusters
@@ -115,7 +115,7 @@ def learn_fs(x, c=1, kernel=GaussianKernel(1), min_size=0.01, fuzzifier=LinearFu
     #compute initial mus for compute the estimated memberships
     gn = create_generator(x, len(x[0]))
     
-    mus = muzzifier.get_mus(x, clusters, kernel, c, gn)
+    mus = muzzifier.get_mus(x, clusters, kernel, c1, gn)
     if None in mus:
         raise ValueError('Unable to calculate mus')
     #print 'mus ', mus
@@ -126,7 +126,7 @@ def learn_fs(x, c=1, kernel=GaussianKernel(1), min_size=0.01, fuzzifier=LinearFu
     for i in range(len(clusters)):
         estimated_membership, _ = possibility_learn(x,
                                           mus[i],
-                                          c=c,
+                                          c=c1,
                                           k=kernel,
                                           fuzzifier=fuzzifier,
                                           sample_generator=gn)
@@ -224,7 +224,7 @@ def validate_fs(x, y, membership_functions, function_labels, resolve_conflict='r
         return np.array(choices)
                            
     function_labels = np.array(function_labels)
-    results = np.array([[f(p) for f in membership_functions] for p in x])
+    results = np.array([[f(p) for f in membership_functions] for p in x])  
     maxs = np.array([np.max(r) for r in results])
     results = [pd.Series(r) for r in results]
     candidates = []
@@ -253,8 +253,7 @@ def validate_fs(x, y, membership_functions, function_labels, resolve_conflict='r
         lss = loss(x,correct_labels,guessed_labels)
         return acc, lss
     
-def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01, fuzzifier=LinearFuzzifier(), muzzifier=BinaryMuzzifier(), force_num_fs=False, force_labels_repr=False, resolve_conflict='random', loss=binary_loss, 
-                  name='ITERATE TESTS', save_graph=False):
+def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01, fuzzifier=LinearFuzzifier(), muzzifier=BinaryMuzzifier(), force_num_fs=False, force_labels_repr=False, same_c=True, resolve_conflict='random', loss=binary_loss, name='ITERATE TESTS', save_graph=False):
     
     '''
     Iterate the procedure of clustering and membership with different combination of parameters
@@ -272,7 +271,10 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
     values = get_principal_components(x,dim)
     
     #get the couples of c,sigma to test
-    couples = [(c,s) for s in sigmas for c in cs]
+    if same_c:
+        couples = [(c, c, s) for s in sigmas for c in cs]
+    else:
+        couples = [(c, c1, s) for s in sigmas for c in cs for c1 in cs]
     
     #initialize the random generator with seed
     if seed is None:
@@ -305,13 +307,13 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
         best_couples = [] #initialization of best couples
         best_accuracy = -1 #initialization of best accuracy
         
-        for (c, sigma) in couples:
-            print '\nmodel selection: trying parameters c={}, sigma={}'.format(c, sigma)
+        for (c, c1, sigma) in couples:
+            print '\nmodel selection: trying parameters c={}, c1={}, sigma={}'.format(c, c1, sigma)
             print 'starting clusterization'
             
             #clustering and compute a membership function for each cluster
             try:
-                mf, clusters_index = learn_fs(train_set, c=c, 
+                mf, clusters_index = learn_fs(train_set, c=c, c1=c1,
                              kernel=GaussianKernel(sigma), min_size=min_size, fuzzifier=fuzzifier, muzzifier=muzzifier)
                 
                 #print 'clusters with index ', clusters_index
@@ -327,15 +329,15 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
                 
                 print 'accuracy: ', accuracy
                 
-                all_accuracies[(valid_iteration, c, sigma)] = accuracy
-                all_losses[(valid_iteration, c, sigma)] = lss
+                all_accuracies[(valid_iteration, c, c1, sigma)] = accuracy
+                all_losses[(valid_iteration, c, c1, sigma)] = lss
                 
                 #check the best accuracy
                 if accuracy == best_accuracy:
-                    best_couples.append((c,sigma))
+                    best_couples.append((c, c1, sigma))
                 elif accuracy > best_accuracy:
                     best_accuracy = accuracy
-                    best_couples = [(c,sigma)]
+                    best_couples = [(c, c1, sigma)]
                    
             except ValueError as e:
                 print str(e)
@@ -344,15 +346,15 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
         if len(best_couples) > 0:
             
             #random choice between the couples with best accuracy
-            c_best, sigma_best = best_couples[np.random.randint(len(best_couples))]
-            print '\nbest couple', (c_best, sigma_best)
+            c_best, c1_best, sigma_best = best_couples[np.random.randint(len(best_couples))]
+            print '\nbest couple', (c_best, c1_best, sigma_best)
             
             #with the couple with the best accuracy infer the membership function merging train and validation set
             new_train_set = np.vstack((train_set, validation_set))
             new_train_index = np.hstack((train_index, validation_index))
             
             try:
-                mf, clusters_index = learn_fs(new_train_set, c=c_best, 
+                mf, clusters_index = learn_fs(new_train_set, c=c_best, c1=c1_best,
                              kernel=GaussianKernel(sigma_best), min_size=min_size, fuzzifier=fuzzifier)
                 print 'first clusters', clusters_index
             
@@ -365,17 +367,17 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
                 if save_graph and dim==2:
                     
                     gr_cluster_division(new_train_set, y[[i for i in new_train_index]],
-                                        membership_functions, function_labels, valid_iteration, colors, sigma_best, c_best)
+                                        membership_functions, function_labels, valid_iteration, colors, sigma_best, c_best, c1_best)
                     gr_save(name+"_"+str(valid_iteration)+"it_clusters_division")
                     
                     for (f,l,j) in zip(membership_functions, function_labels, range(len(function_labels))):
                         
                         gr_membership_contour(new_train_set, y[[i for i in new_train_index]], f, l, j,
-                                              colors, sigma_best, c_best)
+                                              colors, sigma_best, c_best, c1_best)
                         gr_save(name+"_"+str(valid_iteration)+"it_cluster_"+str(j)+"_"+l+"_"+"contour")
                         
                         gr_membership_graded(new_train_set, y[[i for i in new_train_index]], f, l, j,
-                                             colors, colors_map, sigma_best, c_best)
+                                             colors, colors_map, sigma_best, c_best, c1_best)
                         gr_save(name+"_"+str(valid_iteration)+"it_cluster_"+str(j)+"_"+l+"_"+"heat")
                         
 
@@ -385,8 +387,8 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
                 
                 print 'test accuracy: ', accuracy
                 
-                test_accuracies[(valid_iteration, c_best, sigma_best)] = accuracy
-                test_losses[(valid_iteration, c_best, sigma_best)] = lss
+                test_accuracies[(valid_iteration, c_best, c1_best, sigma_best)] = accuracy
+                test_losses[(valid_iteration, c_best, c1_best, sigma_best)] = lss
                 
                 #calculate the accuracy of the best couple on training set
                 accuracy, lss = validate_fs(new_train_set, y[[i for i in new_train_index]], 
@@ -394,8 +396,8 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
                 
                 print 'training accuracy: ', accuracy
                 
-                training_accuracies[(valid_iteration, c_best, sigma_best)] = accuracy
-                training_losses[(valid_iteration, c_best, sigma_best)] = lss
+                training_accuracies[(valid_iteration, c_best, c1_best, sigma_best)] = accuracy
+                training_losses[(valid_iteration, c_best, c1_best, sigma_best)] = lss
                 
                 #at this point the iteration is valid
                 valid_iteration = valid_iteration + 1
@@ -552,10 +554,10 @@ def gr_dataset(x, y, colors):
                     label=e,
                     c=colors[e])
     
-def gr_cluster_division(x, y, membership_functions, function_labels, i, colors, sigma, c):
+def gr_cluster_division(x, y, membership_functions, function_labels, i, colors, sigma, c, c1):
     
     fig = plt.figure(figsize=(12,4))
-    plt.text(-4,-6,"sigma: "+str(sigma)+", c: "+str(c))
+    plt.text(-4,-6,"sigma: "+str(sigma)+", c: "+str(c)+", c1: "+str(c1))
     plt.suptitle('Cluster division '+str(i))
     
     plt.subplot(121)
@@ -575,12 +577,12 @@ def gr_cluster_division(x, y, membership_functions, function_labels, i, colors, 
     plt.xlim(-4,4)
     plt.ylim(-4,4)
     
-def gr_membership_contour(x, y, estimated_membership, label, i, colors, sigma, c):
+def gr_membership_contour(x, y, estimated_membership, label, i, colors, sigma, c, c1):
     
     gr_dataset(x, y, colors)
  
     plt.title('CLUSTER '+str(i)+'  '+label)
-    plt.text(-4,-6,"sigma: "+str(sigma)+", c: "+str(c))
+    plt.text(-4,-6,"sigma: "+str(sigma)+", c: "+str(c)+", c1: "+str(c1))
     
     a = np.arange(-4, 4, .1)
     b = np.arange(-4, 4, .1)
@@ -594,12 +596,12 @@ def gr_membership_contour(x, y, estimated_membership, label, i, colors, sigma, c
     plt.clabel(membership_contour, inline=1)
     plt.legend()
 
-def gr_membership_graded(x, y, estimated_membership, label, i, colors, colors_map, sigma, c):
+def gr_membership_graded(x, y, estimated_membership, label, i, colors, colors_map, sigma, c, c1):
     
     gr_dataset(x, y, colors)
     
     plt.title('CLUSTER '+str(i)+'  '+label)
-    plt.text(-4,-6,"sigma: "+str(sigma)+", c: "+str(c))
+    plt.text(-4,-6,"sigma: "+str(sigma)+", c: "+str(c)+", c1: "+str(c1))
     
     a = np.arange(-4, 4, .1)
     b = np.arange(-4, 4, .1)
