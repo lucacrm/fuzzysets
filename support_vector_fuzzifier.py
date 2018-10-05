@@ -191,38 +191,46 @@ def associate_fs_to_labels(x, y, membership_functions, force_num_fs=False, force
     if not(force_num_fs) and not(force_labels_repr):
         return membership_functions, function_labels
     
+    
 def binary_loss(x,correct_labels,guessed_labels):
     return float(sum(guessed_labels != correct_labels)) / len(x)
-    
-def validate_fs(x, y, membership_functions, function_labels, resolve_conflict='random', loss=binary_loss):
-    
-    def best_choice(candidates, function_labels, real_labels):
-        choices = []
-        for i in range(len(candidates)):
-            found = False
-            for j in range (len(candidates[i])):
-                if function_labels[candidates[i][j]] == real_labels[i] and (not found) :
-                    choices.append(function_labels[candidates[i][j]])
-                    found = True
-            if not found:
-                choices.append(function_labels[np.random.choice(candidates[i])])
-                
-        return np.array(choices)
+
+def k_binary_loss(x,correct_labels,topk_labels):
+    guessed_labels = zip (correct_labels,topk_labels)
+    bool_accuracy = np.array([x[0] in x[1] for x in guessed_labels])
+    lss = 1- (float(np.sum(bool_accuracy))/len(bool_accuracy))
     
     
-    def worst_choice(candidates, function_labels, real_labels):
-        choices = []
-        for i in range(len(candidates)):
-            found = False
-            for j in range (len(candidates[i])):
-                if function_labels[candidates[i][j]] != real_labels[i] and (not found) :
-                    choices.append(function_labels[candidates[i][j]])
-                    found = True
-            if not found:
-                choices.append(function_labels[np.random.choice(candidates[i])])
-                
-        return np.array(choices)
-                           
+def best_choice(candidates, function_labels, real_labels):
+    choices = []
+    for i in range(len(candidates)):
+        found = False
+        for j in range (len(candidates[i])):
+            if function_labels[candidates[i][j]] == real_labels[i] and (not found) :
+                choices.append(function_labels[candidates[i][j]])
+                found = True
+        if not found:
+            choices.append(function_labels[np.random.choice(candidates[i])])
+
+    return np.array(choices)
+
+
+def worst_choice(candidates, function_labels, real_labels):
+    choices = []
+    for i in range(len(candidates)):
+        found = False
+        for j in range (len(candidates[i])):
+            if function_labels[candidates[i][j]] != real_labels[i] and (not found) :
+                choices.append(function_labels[candidates[i][j]])
+                found = True
+        if not found:
+            choices.append(function_labels[np.random.choice(candidates[i])])
+
+    return np.array(choices)
+
+
+def validate(x, y, membership_functions, function_labels, resolve_conflict='random', loss=binary_loss):
+
     function_labels = np.array(function_labels)
     results = np.array([[f(p) for f in membership_functions] for p in x])  
     maxs = np.array([np.max(r) for r in results])
@@ -230,30 +238,68 @@ def validate_fs(x, y, membership_functions, function_labels, resolve_conflict='r
     candidates = []
     for i in range(len(results)):
         candidates.append(results[i][results[i]==maxs[i]].keys().values)
-        
+
     if resolve_conflict == 'random':
         guessed_labels = function_labels[[np.random.choice(c) for c in candidates]]
-          
+
     elif resolve_conflict == 'best':
         guessed_labels = best_choice(candidates,function_labels,y)
-        
+
     elif resolve_conflict == 'worst':
         guessed_labels = worst_choice(c,function_labels,y)
-    
+
     else:
         raise ValueError('the value of resolve_conflict must be random, best or worst')
 
     correct_labels = np.array(y)
-    
+
     acc = float(sum(guessed_labels == correct_labels)) / len(x)
-                    
+
     if loss is None:
         return acc, None
     else:
         lss = loss(x,correct_labels,guessed_labels)
         return acc, lss
+
+
+def validate_k(x, y, membership_functions, function_labels, k, loss=k_binary_loss):
+
+    if k > len(membership_functions):
+        k = len(membership_functions)
+        
+    function_labels = np.array(function_labels)
+    results = np.array([[f(p) for f in membership_functions] for p in x])
+    labelled_results = [zip(x,function_labels) for x in results]
+    sorted_results = np.array([sorted(x,reverse=True) for x in results])
+    topk_results = np.array([x[:k] for x in sorted_results])
+    topk_labels = np.array([[x[1] for x in y] for y in topk_results]
+    guessed_labels = zip (y,topk_labels)
+    bool_accuracy = np.array([x[0] in x[1] for x in guessed_labels])
+    acc = (float(np.sum(bool_accuracy))/len(bool_accuracy))
     
-def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01, fuzzifier=LinearFuzzifier(), muzzifier=BinaryMuzzifier(), force_num_fs=False, force_labels_repr=False, same_c=True, resolve_conflict='random', loss=binary_loss, name='ITERATE TESTS', save_graph=False):
+    if loss is None:
+        return acc, None
+    else:
+        correct_labels=np.array(y)
+        lss = loss(x,correct_labels,topk_labels)
+        return acc, lss
+
+    
+def validate_fs(x, y, membership_functions, function_labels, resolve_conflict='random', loss=None, top_k=None):
+                           
+    if loss is None:
+        if top_k is None:
+            return validate(x, y, membership_functions, function_labels, resolve_conflict)
+        else:
+            return validate_k(x, y, membership_functions, function_labels, k)
+    else:
+       if top_k is None:
+            return validate(x, y, membership_functions, function_labels, resolve_conflict, loss)
+        else:
+            return validate_k(x, y, membership_functions, function_labels, k, loss)
+
+   
+def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01, fuzzifier=LinearFuzzifier(), muzzifier=BinaryMuzzifier(), top_k=None, force_num_fs=False, force_labels_repr=False, same_c=True, resolve_conflict='random', loss=None, name='ITERATE TESTS', save_graph=False):
     
     '''
     Iterate the procedure of clustering and membership with different combination of parameters
@@ -324,8 +370,12 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
                 print 'associated labels', function_labels
 
                 #calculate the accuracy on validation set
-                accuracy, lss = validate_fs(validation_set, y[[i for i in validation_index]], 
-                    membership_functions, function_labels, loss=loss)
+                if loss is None:
+                    accuracy, lss = validate_fs(validation_set, y[[i for i in validation_index]], 
+                                                membership_functions, function_labels, top_k)
+                else:
+                    accuracy, lss = validate_fs(validation_set, y[[i for i in validation_index]], 
+                                                membership_functions, function_labels, top_k, loss=loss)
                 
                 print 'accuracy: ', accuracy
                 
@@ -382,8 +432,12 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
                         
 
                 #calculate the accuracy of the best couple on test set
-                accuracy, lss = validate_fs(test_set, y[[i for i in test_index]], 
-                    membership_functions, function_labels, loss=loss)
+                if loss is None:
+                    accuracy, lss = validate_fs(test_set, y[[i for i in test_index]], 
+                        membership_functions, function_labels, top_k)
+                else:
+                    accuracy, lss = validate_fs(test_set, y[[i for i in test_index]], 
+                        membership_functions, function_labels, top_k, loss=loss,)
                 
                 print 'test accuracy: ', accuracy
                 
@@ -391,8 +445,12 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
                 test_losses[(valid_iteration, c_best, c1_best, sigma_best)] = lss
                 
                 #calculate the accuracy of the best couple on training set
-                accuracy, lss = validate_fs(new_train_set, y[[i for i in new_train_index]], 
-                    membership_functions, function_labels)
+                if loss is None:
+                    accuracy, lss = validate_fs(new_train_set, y[[i for i in new_train_index]], 
+                        membership_functions, function_labels)
+                else:      
+                    accuracy, lss = validate_fs(new_train_set, y[[i for i in new_train_index]], 
+                        membership_functions, function_labels)
                 
                 print 'training accuracy: ', accuracy
                 
@@ -425,6 +483,7 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
     results['force_num_fs'] = force_num_fs
     results['force_labels_repr'] = force_labels_repr
     results['resolve_conflict'] = resolve_conflict
+    results['top_k'] = top_k
     results['seed'] = seed
     results['test-accuracies'] = test_accuracies
     results['training-accuracies'] = training_accuracies
@@ -476,7 +535,8 @@ def pretty_results(results):
     pretty = pretty + 'Force the number of cluster to be the number of different labels: '+str(results['force_num_fs'])+'\n'
     pretty = pretty + 'Force the labels to be always represent by a cluster: '+str(results['force_num_fs'])+'\n\n'
     pretty = pretty + 'Validation info\n'
-    pretty = pretty + 'Conflict resolution: '+results['resolve_conflict']+'\n\n\n'
+    pretty = pretty + 'Conflict resolution: '+results['resolve_conflict']+'\n'
+    pretty = pretty + 'Number of cluster considerated for validation (top_k): '+reseults['top_k']+'\n\n\n'
     pretty = pretty + 'RESULTS\n\n'
     pretty = pretty + 'On TEST set\n\n'
     pretty = pretty + 'Accuracy on test set for every iteration (n_of_the_iter, best_c, best_sigma):\n'
