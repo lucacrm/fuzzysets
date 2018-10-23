@@ -262,22 +262,13 @@ def clustering(x, kernel, c, labels=[], graph=False):
     index_sv = []
     index_v = []
     
-    #sistemare
-    #---
     for i in range(len(betas)):
         if 0 < betas[i] < c:
-            if(graph):
-                plt.plot(x[i][0],x[i][1],'bo')
             index_sv.append(i)
         elif betas[i] == c:
-            if(graph):
-                plt.plot(x[i][0],x[i][1],'ro')
             index_bsv.append(i)
         else:
-            if(graph):
-                plt.plot(x[i][0],x[i][1],'go')
             index_v.append(i)
-     #---
         
     radius, d = squared_radius_and_distance(x, betas, index_sv, k, c)
     
