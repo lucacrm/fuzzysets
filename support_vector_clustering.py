@@ -69,26 +69,25 @@ def get_a_sample(x, n):
             np.vstack([iris_labels[:n], iris_labels[50:50+n], iris_labels[100:100+n]]).ravel() )
 
 def chop(x, minimum, maximum, tolerance=1e-4):
-    
     '''Chops a number when it is sufficiently close to the extreme of
-    an enclosing interval.
+   an enclosing interval.
 
-    Arguments:
+Arguments:
 
-    - x: number to be possibily chopped
-    - minimum: left extreme of the interval containing x
-    - maximum: right extreme of the interval containing x
-    - tolerance: maximum distance in order to chop x
+- x: number to be possibily chopped
+- minimum: left extreme of the interval containing x
+- maximum: right extreme of the interval containing x
+- tolerance: maximum distance in order to chop x
 
-    Returns: x if it is farther than tolerance by both minimum and maximum;
-             minimum if x is closer than tolerance to minimum
-             maximum if x is closer than tolerance to maximum
+Returns: x if it is farther than tolerance by both minimum and maximum;
+         minimum if x is closer than tolerance to minimum
+         maximum if x is closer than tolerance to maximum
 
-    Throws:
+Throws:
 
-    - ValueError if minimum > maximum or if x does not belong to [minimum, maximum]
+- ValueError if minimum > maximum or if x does not belong to [minimum, maximum]
 
-    '''
+'''
     if minimum > maximum:
         raise ValueError('Chop: interval extremes not sorted')
     if  x < minimum or x > maximum:
@@ -100,19 +99,17 @@ def chop(x, minimum, maximum, tolerance=1e-4):
         x = maximum
     return x
 
-def solve_wolf(values, kernel, c):
-    
+def solve_wolf(values, k, c):
     '''
     Solves the dual optimization problem on the basis of SV clustering
 
-    - values: array containing data to be clustered
-    - kernel: kernel function to be used
+    - x: array containing data to be clustered
+    - k: kernel function to be used
     - c: trade-off parameter
     '''
 
-    #if in future I need to use the p parameter of SVC page 130
-    # p = 1.0 / (n*c)
     n=len(values)
+    # p = 1.0 / (n*c)    
     
     model = gpy.Model('Wolf')
     model.setParam('OutputFlag', 0)
@@ -126,10 +123,10 @@ def solve_wolf(values, kernel, c):
     # obj == - SVC(11) 
     obj = gpy.QuadExpr()
     for i, j in it.product(range(n), range(n)):
-        obj.add( b[i] * b[j], kernel.compute(values[i], values[j]))
+        obj.add( b[i] * b[j], k.compute(values[i], values[j]))
     
     for i in range(n):
-        obj.add( -1 * b[i] * kernel.compute(values[i], values[i]))
+        obj.add( -1 * b[i] * k.compute(values[i], values[i]))
     
     model.setObjective(obj, gpy.GRB.MINIMIZE)
     
@@ -146,7 +143,6 @@ def solve_wolf(values, kernel, c):
     b_opt = [chop(v.x, 0, c) for v in model.getVars()]
     
     return b_opt
-
 
 def distance_from_center(x_new, x, b_opt, k, gram_term):
     '''
@@ -254,6 +250,10 @@ def clustering(x, kernel, c, labels=[], graph=False):
     - r is the squared radius
     '''
     
+    import matplotlib.pyplot as plt
+    if(graph):
+        print_graph(x, labels)
+        
     k = kernel 
     
     betas = solve_wolf(x, k, c)
@@ -261,6 +261,23 @@ def clustering(x, kernel, c, labels=[], graph=False):
     index_bsv = []
     index_sv = []
     index_v = []
+    
+    #sistemare
+    #---
+    for i in range(len(betas)):
+        if 0 < betas[i] < c:
+            if(graph):
+                plt.plot(x[i][0],x[i][1],'bo')
+            index_sv.append(i)
+        elif betas[i] == c:
+            if(graph):
+                plt.plot(x[i][0],x[i][1],'ro')
+            index_bsv.append(i)
+        else:
+            if(graph):
+                plt.plot(x[i][0],x[i][1],'go')
+            index_v.append(i)
+     #---
         
     radius, d = squared_radius_and_distance(x, betas, index_sv, k, c)
     
