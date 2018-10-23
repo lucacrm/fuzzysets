@@ -84,7 +84,7 @@ def get_different_labels(labels):
     return ok_index
 
 
-def learn_fs(x, c=1, c1=1, kernel=GaussianKernel(1), min_size=0.01, fuzzifier=LinearFuzzifier(), muzzifier=BinaryMuzzifier()):
+def learn_fs(x, c, c1, kernel, min_size, fuzzifier, muzzifier):
 
     '''
     Divides a set of data into clusters and it computes a membership function for all found clusters
@@ -138,7 +138,7 @@ def learn_fs(x, c=1, c1=1, kernel=GaussianKernel(1), min_size=0.01, fuzzifier=Li
     return estimated_memberships, clusters_index
 
 
-def associate_fs_to_labels(x, y, membership_functions, force_num_fs=False, force_labels_repr=False):
+def associate_fs_to_labels(x, y, membership_functions, force_num_fs, force_labels_repr):
     
     '''
     associate every membership function to a fuzzy set
@@ -199,7 +199,7 @@ def k_binary_loss(x,correct_labels,topk_labels):
     guessed_labels = zip (correct_labels,topk_labels)
     bool_accuracy = np.array([x[0] in x[1] for x in guessed_labels])
     lss = 1- (float(np.sum(bool_accuracy))/len(bool_accuracy))
-    
+    return lss
     
 def best_choice(candidates, function_labels, real_labels):
     choices = []
@@ -229,7 +229,7 @@ def worst_choice(candidates, function_labels, real_labels):
     return np.array(choices)
 
 
-def validate(x, y, membership_functions, function_labels, resolve_conflict='random', loss=binary_loss):
+def validate(x, y, membership_functions, function_labels, resolve_conflict, loss):
 
     function_labels = np.array(function_labels)
     results = np.array([[f(p) for f in membership_functions] for p in x])  
@@ -262,7 +262,7 @@ def validate(x, y, membership_functions, function_labels, resolve_conflict='rand
         return acc, lss
 
 
-def validate_k(x, y, membership_functions, function_labels, k, loss=k_binary_loss):
+def validate_k(x, y, membership_functions, function_labels, k, resolve_conflict, loss):
 
     if k > len(membership_functions):
         k = len(membership_functions)
@@ -270,35 +270,26 @@ def validate_k(x, y, membership_functions, function_labels, k, loss=k_binary_los
     function_labels = np.array(function_labels)
     results = np.array([[f(p) for f in membership_functions] for p in x])
     labelled_results = [zip(x,function_labels) for x in results]
-    sorted_results = np.array([sorted(x,reverse=True) for x in results])
+    sorted_results = np.array([sorted(x,reverse=True) for x in labelled_results])
     topk_results = np.array([x[:k] for x in sorted_results])
-    topk_labels = np.array([[x[1] for x in y] for y in topk_results]
-    guessed_labels = zip (y,topk_labels)
+    topk_labels = np.array([[x[1] for x in r] for r in topk_results])
+    guessed_labels = zip(y,topk_labels)
     bool_accuracy = np.array([x[0] in x[1] for x in guessed_labels])
     acc = (float(np.sum(bool_accuracy))/len(bool_accuracy))
-    
-    if loss is None:
-        return acc, None
-    else:
-        correct_labels=np.array(y)
-        lss = loss(x,correct_labels,topk_labels)
-        return acc, lss
+    correct_labels=np.array(y)
+    lss = loss(x,correct_labels,topk_labels)
+    return acc, lss
 
     
-def validate_fs(x, y, membership_functions, function_labels, resolve_conflict='random', loss=None, top_k=None):
-                           
-    if loss is None:
-        if top_k is None:
-            return validate(x, y, membership_functions, function_labels, resolve_conflict)
-        else:
-            return validate_k(x, y, membership_functions, function_labels, k)
+def validate_fs(x, y, membership_functions, function_labels, resolve_conflict, top_k, loss):
+    
+    if top_k is None:
+        return validate(x, y, membership_functions, function_labels, resolve_conflict, loss)
     else:
-       if top_k is None:
-            return validate(x, y, membership_functions, function_labels, resolve_conflict, loss)
-        else:
-            return validate_k(x, y, membership_functions, function_labels, k, loss)
+        return validate_k(x, y, membership_functions, function_labels, top_k, resolve_conflict, loss)
 
-   
+        
+
 def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01, fuzzifier=LinearFuzzifier(), muzzifier=BinaryMuzzifier(), top_k=None, force_num_fs=False, force_labels_repr=False, same_c=True, resolve_conflict='random', loss=None, name='ITERATE TESTS', save_graph=False):
     
     '''
@@ -321,6 +312,13 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
         couples = [(c, c, s) for s in sigmas for c in cs]
     else:
         couples = [(c, c1, s) for s in sigmas for c in cs for c1 in cs]
+        
+    #initialize the loss function if is None
+    if loss is None:
+        if top_k is None:
+            loss=binary_loss
+        else:
+            loss=k_binary_loss
     
     #initialize the random generator with seed
     if seed is None:
@@ -359,8 +357,7 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
             
             #clustering and compute a membership function for each cluster
             try:
-                mf, clusters_index = learn_fs(train_set, c=c, c1=c1,
-                             kernel=GaussianKernel(sigma), min_size=min_size, fuzzifier=fuzzifier, muzzifier=muzzifier)
+                mf, clusters_index = learn_fs(train_set, c, c1, GaussianKernel(sigma), min_size, fuzzifier, muzzifier)
                 
                 #print 'clusters with index ', clusters_index
             
@@ -368,16 +365,13 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
                 membership_functions, function_labels = associate_fs_to_labels(train_set, y[[i for i in train_index]], mf, force_num_fs=force_num_fs, force_labels_repr=force_labels_repr)
                 
                 print 'associated labels', function_labels
-
+                
                 #calculate the accuracy on validation set
-                if loss is None:
-                    accuracy, lss = validate_fs(validation_set, y[[i for i in validation_index]], 
-                                                membership_functions, function_labels, top_k)
-                else:
-                    accuracy, lss = validate_fs(validation_set, y[[i for i in validation_index]], 
-                                                membership_functions, function_labels, top_k, loss=loss)
+                accuracy, lss = validate_fs(validation_set, y[[i for i in validation_index]], 
+                                            membership_functions, function_labels, resolve_conflict, top_k, loss)
                 
                 print 'accuracy: ', accuracy
+                print 'loss: ', lss
                 
                 all_accuracies[(valid_iteration, c, c1, sigma)] = accuracy
                 all_losses[(valid_iteration, c, c1, sigma)] = lss
@@ -404,8 +398,8 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
             new_train_index = np.hstack((train_index, validation_index))
             
             try:
-                mf, clusters_index = learn_fs(new_train_set, c=c_best, c1=c1_best,
-                             kernel=GaussianKernel(sigma_best), min_size=min_size, fuzzifier=fuzzifier)
+                mf, clusters_index = learn_fs(new_train_set, c_best, c1_best, GaussianKernel(sigma_best),
+                                              min_size, fuzzifier, muzzifier)
                 print 'first clusters', clusters_index
             
                 #associate membership functions to labels
@@ -432,12 +426,8 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
                         
 
                 #calculate the accuracy of the best couple on test set
-                if loss is None:
-                    accuracy, lss = validate_fs(test_set, y[[i for i in test_index]], 
-                        membership_functions, function_labels, top_k)
-                else:
-                    accuracy, lss = validate_fs(test_set, y[[i for i in test_index]], 
-                        membership_functions, function_labels, top_k, loss=loss,)
+                accuracy, lss = validate_fs(test_set, y[[i for i in test_index]], 
+                        membership_functions, function_labels, resolve_conflict, top_k, loss)
                 
                 print 'test accuracy: ', accuracy
                 
@@ -445,12 +435,8 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
                 test_losses[(valid_iteration, c_best, c1_best, sigma_best)] = lss
                 
                 #calculate the accuracy of the best couple on training set
-                if loss is None:
-                    accuracy, lss = validate_fs(new_train_set, y[[i for i in new_train_index]], 
-                        membership_functions, function_labels)
-                else:      
-                    accuracy, lss = validate_fs(new_train_set, y[[i for i in new_train_index]], 
-                        membership_functions, function_labels)
+                accuracy, lss = validate_fs(new_train_set, y[[i for i in new_train_index]], 
+                        membership_functions, function_labels, resolve_conflict, top_k, loss)
                 
                 print 'training accuracy: ', accuracy
                 
@@ -473,6 +459,7 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
     results = {}
     results['name'] = name
     results['cs'] = cs
+    results['same_c'] = same_c
     results['sigmas'] = sigmas
     results['iterations']= iterations
     results['dimensions'] = dim 
@@ -494,27 +481,15 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
     results['training-accuracy-std'] = np.array(training_accuracies.values()).std()
     results['all-accuracy-mean'] = np.array(all_accuracies.values()).mean()
     results['all-accuracy-std'] = np.array(all_accuracies.values()).std()
-    
-    if loss is None:
-        results['test-losses'] = 'None'
-        results['training-losses'] = 'None'
-        results['all-losses'] = 'None'
-        results['test-loss-mean'] = 'None'
-        results['test-loss-std'] = 'None'
-        results['training-loss-mean'] = 'None'
-        results['training-loss-std'] = 'None'
-        results['all-loss-mean'] = 'None'
-        results['all-loss-std'] = 'None'
-    else:
-        results['test-losses'] = test_losses
-        results['training-losses'] = training_losses
-        results['all-losses'] = all_losses
-        results['test-loss-mean'] = np.array(test_losses.values()).mean()
-        results['test-loss-std'] = np.array(test_losses.values()).std()
-        results['training-loss-mean'] = np.array(training_losses.values()).mean()
-        results['training-loss-std'] = np.array(training_losses.values()).std()
-        results['all-loss-mean'] = np.array(all_losses.values()).mean()
-        results['all-loss-std'] = np.array(all_losses.values()).std()
+    results['test-losses'] = test_losses
+    results['training-losses'] = training_losses
+    results['all-losses'] = all_losses
+    results['test-loss-mean'] = np.array(test_losses.values()).mean()
+    results['test-loss-std'] = np.array(test_losses.values()).std()
+    results['training-loss-mean'] = np.array(training_losses.values()).mean()
+    results['training-loss-std'] = np.array(training_losses.values()).std()
+    results['all-loss-mean'] = np.array(all_losses.values()).mean()
+    results['all-loss-std'] = np.array(all_losses.values()).std()
     
     return results
 
@@ -523,6 +498,7 @@ def pretty_results(results):
     pretty = results['name']+', number of iterations: '+str(results['iterations'])+'\n\n'
     pretty = pretty + 'Parameters info\n'
     pretty = pretty + 'Tradeoffs parameter: '+str(results['cs'])+'\n'
+    pretty = pretty + 'Using same parameters for all the clusterization: '+str(results['same_c'])+'\n'
     pretty = pretty + 'Gaussian kernel sigmas: '+str(results['sigmas'])+'\n'
     pretty = pretty + 'Number of principal dimension considerated: '+str(results['dimensions'])+'\n'
     pretty = pretty + 'Dataset length: '+str(results['dataset-length'])+'\n\n'
@@ -536,7 +512,7 @@ def pretty_results(results):
     pretty = pretty + 'Force the labels to be always represent by a cluster: '+str(results['force_num_fs'])+'\n\n'
     pretty = pretty + 'Validation info\n'
     pretty = pretty + 'Conflict resolution: '+results['resolve_conflict']+'\n'
-    pretty = pretty + 'Number of cluster considerated for validation (top_k): '+reseults['top_k']+'\n\n\n'
+    pretty = pretty + 'Number of cluster considerated for validation (top_k): '+str(results['top_k'])+'\n\n\n'
     pretty = pretty + 'RESULTS\n\n'
     pretty = pretty + 'On TEST set\n\n'
     pretty = pretty + 'Accuracy on test set for every iteration (n_of_the_iter, best_c, best_sigma):\n'
@@ -676,179 +652,3 @@ def gr_membership_graded(x, y, estimated_membership, label, i, colors, colors_ma
 def gr_save(filename):
     plt.savefig(filename+".png")
     plt.clf()
-    
-    
-'''
-def iterate_tests_vs_fuzzycmeans(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01, fuzzifier=LinearFuzzifier(), mu_function=None, force_num_fs=False, force_labels_repr=False, resolve_conflict='random', loss=None):
-    
-    #get the wished principal components
-    values = get_principal_components(x,dim)
-    
-    #get the couples of c,sigma to test
-    couples = [(c,s) for s in sigmas for c in cs]
-    
-    #initialize the random generator with seed
-    if seed is None:
-        seed = np.random.randint(0,2**32)   
-    np.random.seed(seed)
-    
-    #initialize parameters for the iterations
-    test_accuracies={}
-    training_accuracies={}
-    test_accuracies_cmeans={}
-    training_accuracies_cmeans={}
-    all_accuracies={}
-    valid_iteration = 0
-    
-    #iterations
-    while(valid_iteration < iterations):
-        print '\n\nholdout iteration {}'.format(valid_iteration)
-        
-        #get a random permutation of data and divide it in train, validation and test set
-        train_index, validation_index, test_index = get_random_sets_by_index(len(values),(0.8,0.1,0.1))
-        train_set = values[[i for i in train_index]]
-        validation_set = values[[i for i in validation_index]]
-        test_set = values[[i for i in test_index]]
-        
-        # find the couple that have the best accuracy for this permutation
-        best_couples = [] #initialization of best couples
-        best_accuracy = -1 #initialization of best accuracy
-        
-        for (c, sigma) in couples:
-            print '\nmodel selection: trying parameters c={}, sigma={}'.format(c, sigma)
-            print 'starting clusterization'
-            
-            #clustering and compute a membership function for each cluster
-            try:
-                mf, clusters_index = learn_fs(train_set, c=c, 
-                             kernel=GaussianKernel(sigma), min_size=min_size, fuzzifier=fuzzifier)
-                
-                print 'first clusters', clusters_index
-            
-                #associate membership functions to labels
-                membership_functions, function_labels = associate_fs_to_labels(train_set, y[[i for i in train_index]], mf, force_num_fs=force_num_fs, force_labels_repr=force_labels_repr)
-                
-                print 'associated labels', function_labels
-
-                #calculate the accuracy on validation set
-                accuracy = validate_fs(validation_set, y[[i for i in validation_index]], 
-                    membership_functions, function_labels)
-                
-                print 'accuracy: ', accuracy
-                
-                all_accuracies[(valid_iteration, c, sigma)] = accuracy
-                
-                #check the best accuracy
-                if accuracy == best_accuracy:
-                    best_couples.append((c,sigma))
-                elif accuracy > best_accuracy:
-                    best_accuracy = accuracy
-                    best_couples = [(c,sigma)]
-                   
-            except ValueError as e:
-                print str(e)
-                continue
-        
-        if len(best_couples) > 0:
-            
-            #random choice between the couples with best accuracy
-            c_best, sigma_best = best_couples[np.random.randint(len(best_couples))]
-            print '\nbest couple', (c_best, sigma_best)
-            
-            #with the couple with the best accuracy infer the membership function merging train and validation set
-            new_train_set = np.vstack((train_set, validation_set))
-            new_train_index = np.hstack((train_index, validation_index))
-            
-            try:
-                mf, clusters_index = learn_fs(new_train_set, c=c_best, 
-                             kernel=GaussianKernel(sigma_best), min_size=min_size, fuzzifier=fuzzifier)
-                print 'first clusters', clusters_index
-            
-                #associate membership functions to labels
-                membership_functions, function_labels = associate_fs_to_labels(new_train_set, y[[i for i in new_train_index]], mf, force_num_fs=force_num_fs, force_labels_repr=force_num_fs)
-                
-                print 'associated labels', function_labels
-
-                #calculate the accuracy of the best couple on test set
-                accuracy = validate_fs(test_set, y[[i for i in test_index]], 
-                    membership_functions, function_labels)
-                
-                print 'test accuracy: ', accuracy
-                
-                test_accuracies[(valid_iteration, c_best, sigma_best)] = accuracy
-                
-                #calculate the accuracy of the best couple on training set
-                accuracy = validate_fs(new_train_set, y[[i for i in new_train_index]], 
-                    membership_functions, function_labels)
-                
-                print 'training accuracy: ', accuracy
-                
-                training_accuracies[(valid_iteration, c_best, sigma_best)] = accuracy
-                
-                print 'starting model against cmeans'
-                
-                #vs fuzzycmeans
-                cntr, u, u0, d, jm, p, fpc = fuzz.cluster.cmeans(
-                    new_train_set.T, len(set(y)), 2, error=0.005, maxiter=1000, init=None)
-                
-                #assign a label to each cluster
-                cluster_membrships = cluster_membership = np.argmax(u, axis=0)
-                labelled_clusters = [l.mode()[0] for l in [pd.Series(ls) for ls in [[b for (a,b) in zip(cluster_membership,
-                                                y[[j for j in new_train_index]]) if a == i] for i in range(len(set(y)))]]]
-                
-                #compute accuracy on training set
-                accuracy = float(len(new_train_set[[labelled_clusters[i] for i in cluster_membership]
-                             == y[[i for i in new_train_index]]])) / float(len(new_train_set))
-                
-                training_accuracies_cmeans[(valid_iteration, c_best, sigma_best)] = accuracy
-                
-                print 'training accuracy with fuzzy cmeans: ', accuracy
-                
-                #predict on test set
-                u, u0, d, jm, p, fpc = fuzz.cluster.cmeans_predict(
-                    test_set.T, cntr, 2, error=0.005, maxiter=1000)
-                
-                #compute accuracy on test set
-                cluster_membership = np.argmax(u, axis=0)
-                
-                accuracy = float(len(test_set[[labelled_clusters[i] for i in cluster_membership]
-                             == y[[j for j in test_index]]])) / float(len(test_set))
-                
-                test_accuracies_cmeans[(valid_iteration, c_best, sigma_best)] = accuracy
-                
-                print 'test accuracy with fuzzy cmeans: ', accuracy
-                
-                #at this point the iteration is valid
-                valid_iteration = valid_iteration + 1
-                print 'iteration is valid'
-                
-            except ValueError as e:
-                print str(e)
-                continue
-            
-        else:
-            print 'no best couple found, iteration invalid '
-            continue
-            
-    #build the results
-    results = {}
-    results['seed'] = seed
-    results['test-accuracies'] = test_accuracies
-    results['training-accuracies'] = training_accuracies
-    results['test-accuracies-cmeans'] = test_accuracies_cmeans
-    results['training-accuracies-cmeans'] = training_accuracies_cmeans
-    results['all-accuracies'] = all_accuracies
-    results['test-mean'] = np.array(test_accuracies.values()).mean()
-    results['test-std'] = np.array(test_accuracies.values()).std()
-    results['training-mean'] = np.array(training_accuracies.values()).mean()
-    results['training-std'] = np.array(training_accuracies.values()).std()
-    results['test-mean-cmeans'] = np.array(test_accuracies_cmeans.values()).mean()
-    results['test-std-cmeans'] = np.array(test_accuracies_cmeans.values()).std()
-    results['training-mean-cmeans'] = np.array(training_accuracies_cmeans.values()).mean()
-    results['training-std-cmeans'] = np.array(training_accuracies_cmeans.values()).std()
-    results['all-mean'] = np.array(all_accuracies.values()).mean()
-    results['all-std'] = np.array(all_accuracies.values()).std()
-
-    return results
-    
-'''
