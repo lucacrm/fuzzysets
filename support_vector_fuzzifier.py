@@ -1,108 +1,27 @@
-from support_vector_clustering import *
+import utils as ut
+import support_vector_clustering as svc
+from muzzifiers import *
 from possibilearn import *
 from possibilearn.kernel import GaussianKernel
-import skfuzzy as fuzz
-from muzzifiers import *
-import matplotlib.pyplot as plt
 
-def get_principal_components(data, n):
-    
-    '''
-    extract the n principal components of a data set
-    
-    - data: data set upon wich extract the principal components
-    - n: number of the wished components
-    '''
-    
-    from sklearn.decomposition import PCA
-    from sklearn.preprocessing import StandardScaler
-    
-    data = np.array(data)
-    
-    if len(data[0]) < n or n < 1:
-        raise ValueError( 'Invalid number of components. It must be between 0 and data length')
-
-    data_std = StandardScaler().fit_transform(data)
-    pca_nd = PCA(n)
-    return pca_nd.fit_transform(data_std)
-
-def get_random_sets_by_index(n, percentuals):
-    
-    '''
-    create a random permutation of the numbers in the range from 0 to n-1 and divide the permutation in three sets according
-    to the passed percentuals.
-    
-    n: range of the data
-    percentuals: tuple (a,b,c) a+b+c must be 1
-    '''
-    
-    if sum(percentuals) !=1:
-        raise ValueError('The sum of the elements in the tuple of percentuals must be 1')
-    
-    indexes = range(n)
-    permutation = np.random.permutation(indexes)
-    
-    perc_train, perc_val, perc_test = percentuals
-    
-    train_index = permutation[:int(n*perc_train)]
-    validation_index = permutation[int(n*perc_train):int(n*(perc_train+perc_val))]
-    test_index = permutation[int(n*(perc_train+perc_val)):]
-    
-    return train_index, validation_index, test_index
-
-def get_random_sets(x, percentuals):
-    
-    '''
-    create a random permutation of the data in x and divide the permutation in three sets according
-    to the passed percentuals.
-    
-    x: data set
-    percentuals: tuple (a,b,c) a+b+c must be 1
-    '''
-    if sum(percentuals) !=1:
-        raise ValueError('The sum of the elements in the tuple of percentuals must be 1')
-    
-    n=len(x)
-    permutation = np.random.permutation(x)
-    perc_train, perc_val, perc_test = percentuals
-    
-    train = permutation[:int(n*perc_train)]
-    validation = permutation[int(n*perc_train):int(n*(perc_train+perc_val))]
-    test = permutation[int(n*(perc_train+perc_val)):]
-    
-    return train, validation, test
-
-def get_different_labels(labels):
-    
-    d={}
-    ok_index = []
-    for j in range(len(labels)):
-        if labels[j] not in d:
-            ok_index.append(j)
-            d[labels[j]] = True
-            
-    return ok_index
-
-
-def learn_fs(x, c, c1, kernel, min_size, fuzzifier, muzzifier):
+def learn_fs(x, c, c1, kernel, min_size, fuzzifier, muzzifier, all_links):
 
     '''
-    Divides a set of data into clusters and it computes a membership function for all found clusters
+    Divides a set of data into clusters and computes a membership function for all of it
     
     - x: set of points
-    - y: labels of points
-    - c: tradeoff value
-    - kernel: kernel for the trasformation of data in an high-dimensional space
+    - c: trade-off value in 1st level clustering
+    - c1: trade-off value in 2nd level clustering
+    - kernel: kernel function to be used
     - min_size: lower bound for the dimension of a cluster (in percentage of the size of the data set)
-    - fuzzifier: function to be used in order to get membership values of
-             points falling outside the crisp set
-    - mu_f: function to be used in order to set a value of mu, representing distance of a point to a cluster.
+    - fuzzifier: function to be used in order to get membership values of points falling outside the crisp set
+    - muzzifier: function to be used in order to set a value of mu, representing distance of a point to a cluster.
     
     '''
     
     x_len=len(x)
     
-    clusters_index, r = clustering(x, kernel, c) #clusterize data using indexes
+    clusters_index, r = svc.clustering(x, kernel, c, all_links) #clusterize data using indexes
 
     clusters_index = [ cl for cl in clusters_index if len(cl) > x_len*min_size ] #exclude small clusters
 
@@ -112,15 +31,13 @@ def learn_fs(x, c, c1, kernel, min_size, fuzzifier, muzzifier):
     print 'clusters by index ', clusters_index
     print 'number of clusters ', len(clusters)
 
-    #compute initial mus for compute the estimated memberships
-    gn = create_generator(x, len(x[0]))
-    
+    gn = ut.create_generator(x, len(x[0]))
+    print 'inferring mus'
     mus = muzzifier.get_mus(x, clusters, kernel, c1, gn)
     if None in mus:
         raise ValueError('Unable to calculate mus')
-    #print 'mus ', mus
+        
     print 'inferring membership functions'
-    
     estimated_memberships = []
 
     for i in range(len(clusters)):
@@ -141,7 +58,7 @@ def learn_fs(x, c, c1, kernel, min_size, fuzzifier, muzzifier):
 def associate_fs_to_labels(x, y, membership_functions, force_num_fs, force_labels_repr):
     
     '''
-    associate every membership function to a fuzzy set
+    associates each membership function to a fuzzy set
     
     - x: set of data point
     - y: labels of the data points
@@ -192,16 +109,44 @@ def associate_fs_to_labels(x, y, membership_functions, force_num_fs, force_label
         return membership_functions, function_labels
     
     
-def binary_loss(x,correct_labels,guessed_labels):
+def binary_loss(x, correct_labels, guessed_labels):
+    
+    '''
+    loss function that returns loss as uncorrect/tot
+    
+    x: set of points
+    correct_labels: array of the correct labels for points in x
+    guessed_labels: array of the guessed labels for points in x
+    '''
     return float(sum(guessed_labels != correct_labels)) / len(x)
 
-def k_binary_loss(x,correct_labels,topk_labels):
+def k_binary_loss(x, correct_labels, topk_labels):
+    
+    '''
+    loss function that returns loss as uncorrect/tot
+    
+    x: set of points
+    correct_labels: array of the correct labels for points in x
+    guessed_labels: array of the guessed labels for points in x, k labels for each point
+    '''
+    
     guessed_labels = zip (correct_labels,topk_labels)
     bool_accuracy = np.array([x[0] in x[1] for x in guessed_labels])
     lss = 1- (float(np.sum(bool_accuracy))/len(bool_accuracy))
     return lss
     
 def best_choice(candidates, function_labels, real_labels):
+    
+    '''
+    choses the correct label between candidates. if the candidates are all wrong, choses randomly.
+    
+    candidates: array of candidate point labels, various candidates for each point
+    function_labels: array of founded clusters labels
+    real_labels: array of known labels for each point
+    
+    returns the array of chosen labels
+    '''
+    
     choices = []
     for i in range(len(candidates)):
         found = False
@@ -216,6 +161,17 @@ def best_choice(candidates, function_labels, real_labels):
 
 
 def worst_choice(candidates, function_labels, real_labels):
+    
+    '''
+    chooses the uncorrect label between candidates. if the candidates are all correct, chooses randomly.
+    
+    candidates: array of candidate point labels, various candidates for each point
+    function_labels: array of founded clusters labels
+    real_labels: array of known labels for each point
+    
+    returns the array of chosen labels
+    '''
+    
     choices = []
     for i in range(len(candidates)):
         found = False
@@ -231,6 +187,17 @@ def worst_choice(candidates, function_labels, real_labels):
 
 def validate(x, y, membership_functions, function_labels, resolve_conflict, loss):
 
+    '''
+    validate the passed model
+    
+    x: set of points
+    y: set of point labels
+    membership_functions: set of membership functions
+    function_labels: set of function labels
+    resolve_conflict: string in ("best", "worst", "random"), select how resolve conflict
+    loss: loss function to be used loss(x, correct_labels, guessed_labels)
+    '''
+    
     function_labels = np.array(function_labels)
     results = np.array([[f(p) for f in membership_functions] for p in x])  
     maxs = np.array([np.max(r) for r in results])
@@ -243,10 +210,10 @@ def validate(x, y, membership_functions, function_labels, resolve_conflict, loss
         guessed_labels = function_labels[[np.random.choice(c) for c in candidates]]
 
     elif resolve_conflict == 'best':
-        guessed_labels = best_choice(candidates,function_labels,y)
+        guessed_labels = best_choice(candidates, function_labels, y)
 
     elif resolve_conflict == 'worst':
-        guessed_labels = worst_choice(c,function_labels,y)
+        guessed_labels = worst_choice(c, function_labels, y)
 
     else:
         raise ValueError('the value of resolve_conflict must be random, best or worst')
@@ -263,6 +230,19 @@ def validate(x, y, membership_functions, function_labels, resolve_conflict, loss
 
 
 def validate_k(x, y, membership_functions, function_labels, k, resolve_conflict, loss):
+    
+    
+    '''
+    validate the passed model
+    
+    x: set of points
+    y: set of point labels
+    membership_functions: set of membership functions
+    function_labels: set of function labels
+    k: number of most graduated labels to consider
+    resolve_conflict: string in ("best", "worst", "random"), select how resolve conflict
+    loss: loss function to be used loss(x, correct_labels, guessed_labels)
+    '''
 
     if k > len(membership_functions):
         k = len(membership_functions)
@@ -283,6 +263,18 @@ def validate_k(x, y, membership_functions, function_labels, k, resolve_conflict,
     
 def validate_fs(x, y, membership_functions, function_labels, resolve_conflict, top_k, loss):
     
+    '''
+    validate the passed model
+    
+    x: set of points
+    y: set of point labels
+    membership_functions: set of membership functions
+    function_labels: set of function labels
+    top_k: number of most graduated labels to consider, if None only the most graduate label is considered
+    resolve_conflict: string in ("best", "worst", "random"), select how resolve conflict
+    loss: loss function to be used loss(x, correct_labels, guessed_labels)
+    '''
+    
     if top_k is None:
         return validate(x, y, membership_functions, function_labels, resolve_conflict, loss)
     else:
@@ -290,22 +282,36 @@ def validate_fs(x, y, membership_functions, function_labels, resolve_conflict, t
 
         
 
-def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01, fuzzifier=LinearFuzzifier(), muzzifier=BinaryMuzzifier(), top_k=None, force_num_fs=False, force_labels_repr=False, same_c=True, resolve_conflict='random', loss=None, name='ITERATE TESTS', save_graph=False):
+def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01, fuzzifier=LinearFuzzifier(), muzzifier=BinaryMuzzifier(), top_k=None, force_num_fs=False, force_labels_repr=False, same_c=True, resolve_conflict='random', loss=None, all_links=False, name='ITERATE TESTS', save_graph=False, pretty=False):
     
     '''
-    Iterate the procedure of clustering and membership with different combination of parameters
+    Iterate the procedure of model selection and validation
     
     - x: set of data point
     - y: labels of the data points
     - cs: array of tradeoff values
     - sigmas: array of GaussianKernel parameters
-    - n: numbers of iteration
+    - iterations: numbers of iteration
     - dim: number of principal components to consider
-    - seed: seed for initialize the numpy random generator, if no seed is specified a random seed is choose
+    - seed: seed for initialize the numpy random generator, if no seed is specified a random seed is chosen
+    - min_size: lower bound for the dimension of a cluster (in percentage of the size of the data set)
+    - fuzzifier: function to be used in order to get membership values of points falling outside the crisp set
+    - muzzifier: function to be used in order to set a value of mu, representing distance of a point to a cluster.
+    - top_k: top_k: number of most graduated labels to consider in validation. If None only the most graduate label is considered
+    - force_num_fs: if true force the number of fuzzy sets to be equal to the number of different labels
+    - force_labels_repr: if true force each label to have at least one fuzzy set that represent it
+    - same_c: if True in each model 1st level clustering and 2nd level clustering use the same 
+      tradeoff parameter, if False alla combination of values in cs builds a model
+    - resolve_conflict: resolve_conflict: string in ("best", "worst", "random"), select how resolve conflict in validation
+    - loss: loss function to be used
+    - all_links: if True in the graph method to build cluster all links between points are controlled. If False only links
+      between support vectors and other points are controlled
+    - name: string, name of the experiment
+    - save_graph: if True and if dim equal to 2 graphs of clusters are saved.
     '''
     
     #get the wished principal components
-    values = get_principal_components(x,dim)
+    values = ut.get_principal_components(x,dim)
     
     #get the couples of c,sigma to test
     if same_c:
@@ -335,14 +341,14 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
     valid_iteration = 0
     
     #associate every label to a color for graphs consistency
-    colors, colors_map = associate_labels_to_colors(y)
+    colors, colors_map = ut.associate_labels_to_colors(y)
     
     #iterations
     while(valid_iteration < iterations):
         print '\n\nholdout iteration {}'.format(valid_iteration)
         
         #get a random permutation of data and divide it in train, validation and test set
-        train_index, validation_index, test_index = get_random_sets_by_index(len(values),(0.8,0.1,0.1)) #perc as a parameter?
+        train_index, validation_index, test_index = ut.get_random_sets_by_index(len(values),(0.8,0.1,0.1)) #perc as a parameter?
         train_set = values[[i for i in train_index]]
         validation_set = values[[i for i in validation_index]]
         test_set = values[[i for i in test_index]]
@@ -357,7 +363,7 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
             
             #clustering and compute a membership function for each cluster
             try:
-                mf, clusters_index = learn_fs(train_set, c, c1, GaussianKernel(sigma), min_size, fuzzifier, muzzifier)
+                mf, clusters_index = learn_fs(train_set, c, c1, GaussianKernel(sigma), min_size, fuzzifier, muzzifier, all_links)
                 
                 #print 'clusters with index ', clusters_index
             
@@ -399,7 +405,7 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
             
             try:
                 mf, clusters_index = learn_fs(new_train_set, c_best, c1_best, GaussianKernel(sigma_best),
-                                              min_size, fuzzifier, muzzifier)
+                                              min_size, fuzzifier, muzzifier, all_links)
                 print 'first clusters', clusters_index
             
                 #associate membership functions to labels
@@ -410,19 +416,19 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
                 #graphs
                 if save_graph and dim==2:
                     
-                    gr_cluster_division(new_train_set, y[[i for i in new_train_index]],
+                    ut.gr_cluster_division(new_train_set, y[[i for i in new_train_index]],
                                         membership_functions, function_labels, valid_iteration, colors, sigma_best, c_best, c1_best)
-                    gr_save(name+"_"+str(valid_iteration)+"it_clusters_division")
+                    ut.gr_save(name+"_"+str(valid_iteration)+"it_clusters_division")
                     
                     for (f,l,j) in zip(membership_functions, function_labels, range(len(function_labels))):
                         
-                        gr_membership_contour(new_train_set, y[[i for i in new_train_index]], f, l, j,
+                        ut.gr_membership_contour(new_train_set, y[[i for i in new_train_index]], f, l, j,
                                               colors, sigma_best, c_best, c1_best)
-                        gr_save(name+"_"+str(valid_iteration)+"it_cluster_"+str(j)+"_"+l+"_"+"contour")
+                        ut.gr_save(name+"_"+str(valid_iteration)+"it_cluster_"+str(j)+"_"+l+"_"+"contour")
                         
-                        gr_membership_graded(new_train_set, y[[i for i in new_train_index]], f, l, j,
+                        ut.gr_membership_graded(new_train_set, y[[i for i in new_train_index]], f, l, j,
                                              colors, colors_map, sigma_best, c_best, c1_best)
-                        gr_save(name+"_"+str(valid_iteration)+"it_cluster_"+str(j)+"_"+l+"_"+"heat")
+                        ut.gr_save(name+"_"+str(valid_iteration)+"it_cluster_"+str(j)+"_"+l+"_"+"heat")
                         
 
                 #calculate the accuracy of the best couple on test set
@@ -470,6 +476,7 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
     results['force_num_fs'] = force_num_fs
     results['force_labels_repr'] = force_labels_repr
     results['resolve_conflict'] = resolve_conflict
+    results['all_links'] = all_links
     results['top_k'] = top_k
     results['seed'] = seed
     results['test-accuracies'] = test_accuracies
@@ -491,164 +498,7 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
     results['all-loss-mean'] = np.array(all_losses.values()).mean()
     results['all-loss-std'] = np.array(all_losses.values()).std()
     
-    return results
-
-def pretty_results(results):
-    
-    pretty = results['name']+', number of iterations: '+str(results['iterations'])+'\n\n'
-    pretty = pretty + 'Parameters info\n'
-    pretty = pretty + 'Tradeoffs parameter: '+str(results['cs'])+'\n'
-    pretty = pretty + 'Using same parameters for all the clusterization: '+str(results['same_c'])+'\n'
-    pretty = pretty + 'Gaussian kernel sigmas: '+str(results['sigmas'])+'\n'
-    pretty = pretty + 'Number of principal dimension considerated: '+str(results['dimensions'])+'\n'
-    pretty = pretty + 'Dataset length: '+str(results['dataset-length'])+'\n\n'
-    pretty = pretty + 'Clusterization info\n'
-    d = int(results['dataset-length']*results['min_size'])
-    pretty = pretty + 'Minimum size of a cluster: in perc: '+str(results['min_size'])+', in int: '+str(d+1)+'\n'
-    pretty = pretty + 'Type of mu: '+results['muzzifier']+'\n'
-    pretty = pretty + 'Fuzzifier: '+results['fuzzifier']+'\n'
-    pretty = pretty + 'Cluster to label info\n'
-    pretty = pretty + 'Force the number of cluster to be the number of different labels: '+str(results['force_num_fs'])+'\n'
-    pretty = pretty + 'Force the labels to be always represent by a cluster: '+str(results['force_num_fs'])+'\n\n'
-    pretty = pretty + 'Validation info\n'
-    pretty = pretty + 'Conflict resolution: '+results['resolve_conflict']+'\n'
-    pretty = pretty + 'Number of cluster considerated for validation (top_k): '+str(results['top_k'])+'\n\n\n'
-    pretty = pretty + 'RESULTS\n\n'
-    pretty = pretty + 'On TEST set\n\n'
-    pretty = pretty + 'Accuracy on test set for every iteration (n_of_the_iter, best_c, best_sigma):\n'
-    
-    d = sorted(results['test-accuracies'])
-    for x in d:
-        pretty = pretty + str(x) + ': ' +  str(results['test-accuracies'][x]) +'\n'
-        
-    pretty = pretty + '\nLoss on test set for every iteration (n_of_the_iter, best_c, best_sigma):\n'
-        
-    d = sorted(results['test-losses'])
-    for x in d:
-        pretty = pretty + str(x) + ': ' +  str(results['test-losses'][x]) +'\n'
-        
-    pretty = pretty + '\nAccuracy mean :'+str(results['test-accuracy-mean'])+'\n'
-    pretty = pretty + 'Std deviation :'+str(results['test-accuracy-std'])+'\n'
-    pretty = pretty + 'Loss mean :'+str(results['test-loss-mean'])+'\n'
-    pretty = pretty + 'Std deviation :'+str(results['test-loss-std'])+'\n\n'
-    
-    pretty = pretty + 'On TRAINING set\n\n'
-    pretty = pretty + 'Accuracy on training set for every iteration (n_of_the_iter, c, sigma):\n'
-    
-    d = sorted(results['training-accuracies'])
-    for x in d:
-        pretty = pretty + str(x) + ': ' +  str(results['training-accuracies'][x]) +'\n'
-        
-    pretty = pretty + 'Loss on training set for every iteration (n_of_the_iter, best_c, best_sigma):\n'
-        
-    d = sorted(results['training-losses'])
-    for x in d:
-        pretty = pretty + str(x) + ': ' + str(results['training-losses'][x]) +'\n'
-    
-    pretty = pretty + '\nAccuracy mean :'+str(results['training-accuracy-mean'])+'\n'
-    pretty = pretty + 'Std deviation :'+str(results['training-accuracy-std'])+'\n'
-    pretty = pretty + 'Loss mean :'+str(results['training-loss-mean'])+'\n'
-    pretty = pretty + 'Std deviation :'+str(results['training-loss-std'])+'\n\n'
-    
-    pretty = pretty + 'On ALL the sets\n\n'
-    pretty = pretty + 'Accuracy on all the set for every iteration, for every couple c,sigma (n_of_the_iter, c, sigma):\n'
-    
-    d = sorted(results['all-accuracies'])
-    for x in d:
-        pretty = pretty + str(x) + ': ' +  str(results['all-accuracies'][x]) +'\n'
-        
-    pretty = pretty + '\nLoss on all the set for every iteration, for every couple c,sigma (n_of_the_iter, best_c, best_sigma):\n'
-        
-    d = sorted(results['all-losses'])
-    for x in d:
-        pretty = pretty + str(x) + ': ' + str(results['all-losses'][x]) +'\n'
-    
-    pretty = pretty + '\nAccuracy mean :'+str(results['all-accuracy-mean'])+'\n'
-    pretty = pretty + 'Std deviation :'+str(results['all-accuracy-std'])+'\n'
-    pretty = pretty + 'Loss mean :'+str(results['all-loss-mean'])+'\n'
-    pretty = pretty + 'Std deviation :'+str(results['all-loss-std'])+'\n\n'
-    
-    return pretty
-
-def associate_labels_to_colors(y):
-
-    d1={}
-    d2={}
-    color_list = ['b','g','r','c','m','y','k']
-    color_map_list = [cm.Blues, cm.Greens, cm.Reds]
-    set_y = sorted(list(set(y)))
-    for (a,b) in zip(set_y,color_list):
-        d1[a] = b
-    for (c,d) in zip(set_y,color_map_list):
-        d2[c] = d
-    return d1, d2
-
-def gr_dataset(x, y, colors): 
-    for e in colors:
-        plt.scatter(x[y==e, 0],
-                    x[y==e, 1],
-                    label=e,
-                    c=colors[e])
-    
-def gr_cluster_division(x, y, membership_functions, function_labels, i, colors, sigma, c, c1):
-    
-    fig = plt.figure(figsize=(12,4))
-    plt.text(-4,-6,"sigma: "+str(sigma)+", c: "+str(c)+", c1: "+str(c1))
-    plt.suptitle('Cluster division '+str(i))
-    
-    plt.subplot(121)
-    gr_dataset(x, y, colors)
-    plt.title('Dataset by known labels')
-    plt.legend()
-    plt.xlim(-4,4)
-    plt.ylim(-4,4)
-        
-    function_labels = np.array(function_labels)
-    new_y = function_labels[[np.argmax([mf(p) for mf in membership_functions]) for p in x]]
-    
-    plt.subplot(122)
-    gr_dataset(x, new_y, colors)
-    plt.title('Dataset by obtained clusters')
-    plt.legend()
-    plt.xlim(-4,4)
-    plt.ylim(-4,4)
-    
-def gr_membership_contour(x, y, estimated_membership, label, i, colors, sigma, c, c1):
-    
-    gr_dataset(x, y, colors)
- 
-    plt.title('CLUSTER '+str(i)+'  '+label)
-    plt.text(-4,-6,"sigma: "+str(sigma)+", c: "+str(c)+", c1: "+str(c1))
-    
-    a = np.arange(-4, 4, .1)
-    b = np.arange(-4, 4, .1)
-    A, B = np.meshgrid(a, b)
-    zs = np.array([estimated_membership((a, b))
-                   for a,b in zip(np.ravel(A), np.ravel(B))])
-    Z = zs.reshape(A.shape)
-
-    membership_contour = plt.contour(A, B, Z,
-                                     levels=(.1, .3, .5, .7, .8, .9, .95), colors='k')
-    plt.clabel(membership_contour, inline=1)
-    plt.legend()
-
-def gr_membership_graded(x, y, estimated_membership, label, i, colors, colors_map, sigma, c, c1):
-    
-    gr_dataset(x, y, colors)
-    
-    plt.title('CLUSTER '+str(i)+'  '+label)
-    plt.text(-4,-6,"sigma: "+str(sigma)+", c: "+str(c)+", c1: "+str(c1))
-    
-    a = np.arange(-4, 4, .1)
-    b = np.arange(-4, 4, .1)
-    A, B = np.meshgrid(a, b)
-    zs = np.array([estimated_membership((a, b))
-                   for a,b in zip(np.ravel(A), np.ravel(B))])
-    Z = zs.reshape(A.shape)
-    plt.imshow(Z, interpolation='bilinear', origin='lower',
-           cmap=colors_map[label], alpha=0.99, extent=(-4, 4, -4, 4))
-    plt.legend()
-    
-def gr_save(filename):
-    plt.savefig(filename+".png")
-    plt.clf()
+    if(pretty):
+        return ut.pretty_results(results)
+    else:
+        return result

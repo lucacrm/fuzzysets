@@ -1,5 +1,5 @@
+import utils as ut
 import numpy as np
-import matplotlib.cm as cm
 import pandas as pd
 import random
 from possibilearn import *
@@ -8,98 +8,8 @@ import math
 import itertools as it
 import gurobipy as gpy
 
-#farla in modo che come estremi utilizzi valori coerenti ai dati passati
-def g(m):
-    return (-4 + np.random.random(2*m) * 8).reshape((m, 2))
-
-def create_generator(data_set, n_components):
-    a = -4 #capire
-    b = 8 #capire
-    
-    def gen(m):
-        return (a + np.random.random(n_components*m) * b).reshape((m, n_components))
-    
-    return gen
-
-def gr_membership_graded(estimated_membership, color_map):
-    x = np.arange(-4, 4, .1)
-    y = np.arange(-4, 4, .1)
-    X, Y = np.meshgrid(x, y)
-    zs = np.array([estimated_membership((x, y))
-                   for x,y in zip(np.ravel(X), np.ravel(Y))])
-    Z = zs.reshape(X.shape)
-    plt.imshow(Z, interpolation='bilinear', origin='lower',
-               cmap=color_map, alpha=0.99, extent=(-4, 4, -4, 4))
-    
-def gr_membership_contour(estimated_membership):
-    x = np.arange(-4, 4, .1)
-    y = np.arange(-4, 4, .1)
-    X, Y = np.meshgrid(x, y)
-    zs = np.array([estimated_membership((x, y))
-                   for x,y in zip(np.ravel(X), np.ravel(Y))])
-    Z = zs.reshape(X.shape)
-
-    membership_contour = plt.contour(X, Y, Z,
-                                     levels=(.1, .3, .5, .7, .8, .9, .95), colors='k')
-    plt.clabel(membership_contour, inline=1)
-
-def gr_dataset(): 
-    for lab, col in zip(('Iris-setosa', 'Iris-versicolor', 'Iris-virginica'),
-                        ('blue', 'green', 'red')):
-        plt.scatter(iris_values_2d[iris_labels==lab, 0],
-                    iris_values_2d[iris_labels==lab, 1],
-                    label=lab,
-                    c=col)
-
-def get_different_clusters(clusters, clusters_index, clusters_labels):
-    d={}
-    c=[]
-    l=[]
-    i=[]
-    for j in range(len(clusters_labels)):
-        if clusters_labels[j] not in d:
-            d[clusters_labels[j]] = True
-            c.append(clusters[j])
-            i.append(clusters_index[j])
-            l.append(clusters_labels[j])
-    return c, i, l
-
-def get_a_sample(x, n):
-    return (np.vstack([iris_values_2d[:n], iris_values_2d[50:50+n], iris_values_2d[100:100+n]]) , 
-            np.vstack([iris_labels[:n], iris_labels[50:50+n], iris_labels[100:100+n]]).ravel() )
-
-def chop(x, minimum, maximum, tolerance=1e-4):
-    '''Chops a number when it is sufficiently close to the extreme of
-   an enclosing interval.
-
-Arguments:
-
-- x: number to be possibily chopped
-- minimum: left extreme of the interval containing x
-- maximum: right extreme of the interval containing x
-- tolerance: maximum distance in order to chop x
-
-Returns: x if it is farther than tolerance by both minimum and maximum;
-         minimum if x is closer than tolerance to minimum
-         maximum if x is closer than tolerance to maximum
-
-Throws:
-
-- ValueError if minimum > maximum or if x does not belong to [minimum, maximum]
-
-'''
-    if minimum > maximum:
-        raise ValueError('Chop: interval extremes not sorted')
-    if  x < minimum or x > maximum:
-        raise ValueError('Chop: value not belonging to interval')
-
-    if x - minimum < tolerance:
-        x = 0
-    if maximum - x < tolerance:
-        x = maximum
-    return x
-
 def solve_wolf(values, k, c):
+    
     '''
     Solves the dual optimization problem on the basis of SV clustering
 
@@ -145,8 +55,9 @@ def solve_wolf(values, k, c):
     return b_opt
 
 def distance_from_center(x_new, x, b_opt, k, gram_term):
+    
     '''
-    Computes the squared distance between the image of a point and the center of the found sphere
+    Computes the squared distance between the image of a point and the center of the sphere founded during 1-SVM
     
     - x_new: starting point
     - x: array of points to be clustered
@@ -161,8 +72,9 @@ def distance_from_center(x_new, x, b_opt, k, gram_term):
     return d
 
 def squared_radius_and_distance(x, b_opt, index_sv, k, c, mean=True):
+    
     '''
-    Computes the squared squared radius of the found sphere and a function returning
+    Computes the squared radius of the found sphere and a function returning
     the squared distance between the image of a generic point and the sphere center
     
     - x: array of points to be clustered
@@ -175,13 +87,6 @@ def squared_radius_and_distance(x, b_opt, index_sv, k, c, mean=True):
     
     - r is the squared radius
     - d is the function computing the squared distance
-    '''
-    
-    '''
-    print 'b_opt ', b_opt
-    print 'index_sv ', index_sv
-    print 'k ', k
-    print 'mean ', mean
     '''
  
     if(len(index_sv) == 0):
@@ -197,7 +102,9 @@ def squared_radius_and_distance(x, b_opt, index_sv, k, c, mean=True):
     
     return (np.mean(r), d) if mean else (np.max(r), d)
 
+
 def check_couple(x_start, x_end, radius, d, discretization_size=20):
+    
     x_start = np.array(x_start)
     x_end = np.array(x_end)
     discretization = np.arange(0., 1+1./discretization_size, 1./discretization_size)
@@ -206,7 +113,7 @@ def check_couple(x_start, x_end, radius, d, discretization_size=20):
             return 0
     return 1
 
-def build_clusters(x, index_v, index_sv, radius, d):
+def build_clusters(x, index_v, index_sv, radius, d, all_links=False):
     
     '''
     Build clusters as connected component of the graph which its nodes are the non-BSV points in the 
@@ -225,7 +132,11 @@ def build_clusters(x, index_v, index_sv, radius, d):
     G.add_nodes_from(index_v)
     G.add_nodes_from(index_sv)
     
-    couples = [[i,j] for i in index_v for j in index_sv]
+    if(all_links):
+        indexes = index_v + index_sv
+        couples = filter(lambda x: x[0]!=x[1], [[i,j] for i in indexes for j in indexes])
+    else:
+        couples = [[i,j] for i in index_sv for j in index_v]
     
     for c in couples:
         if check_couple(x[c[0]], x[c[1]], radius, d):
@@ -233,7 +144,7 @@ def build_clusters(x, index_v, index_sv, radius, d):
             
     return [list(c) for c in list(nx.connected_components(G))]
 
-def clustering(x, kernel, c, labels=[], graph=False):
+def clustering(x, kernel, c, all_links):
     
     '''
     cluster a set of points by the support vector method
@@ -251,8 +162,6 @@ def clustering(x, kernel, c, labels=[], graph=False):
     '''
     
     import matplotlib.pyplot as plt
-    if(graph):
-        print_graph(x, labels)
         
     k = kernel 
     
@@ -271,10 +180,6 @@ def clustering(x, kernel, c, labels=[], graph=False):
             index_v.append(i)
         
     radius, d = squared_radius_and_distance(x, betas, index_sv, k, c)
-    
-    if(graph):
-        plt.show()
-        print "number of support vectors: %d" %len(index_sv)
         
-    return build_clusters(x, index_v, index_sv, radius, d), radius
+    return build_clusters(x, index_v, index_sv, radius, d, all_links), radius
     
