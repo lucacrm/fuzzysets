@@ -1,0 +1,196 @@
+\documentclass [10pt,a4paper,twoside,openright] {book}
+\usepackage{amsmath}
+\usepackage{mathtools}
+\usepackage{amssymb}
+\begin{document}
+\title{Apprendimento Simultaneo di Fuzzy Set}
+\author{Luca Cermenati}
+\maketitle
+\tableofcontents
+\chapter{Fuzzy Set}
+\section{Il concetto di fuzziness}
+La logica classica poggia su due valori di verità differenti e opposti, \textit{vero} e \textit{falso}. Ogni enunciato affrontabile secondo i criteri della logica classica deve essere una proposizione, deve essere cioè possibile dire, con certezza, se l'enunciato è vero, oppure se è falso. Quindi gli enunciati "Luca è alto 180cm" e "$3$ è maggiore di $5$" sono proposizioni, mentre l'enunciato "Milano è una bella città" non è una proposizione.
+Rappresentare un insieme in maniera \textit{intensiva} significa scrivere un enunciato generalizzato che catturi una caratteristica comune ai soli elementi appartenenti all'insieme che si vuole rappresentare. Per esempio $\lbrace x \in \mathbb{R} \mid x > 0 \rbrace$ esprime la caratteristica di essere un numero reale e di essere maggiore di zero, ed è la rappresentazione intensiva dell'insieme dei numeri reali positivi. Preso un singolo elemento $x$, l'enunciato generale della rappresentazione intensiva di un insieme diventa una proposizione. A stabilire se l'elemento considerato è parte oppure no dell'insieme è la veridicità della proposizione ottenuta. Ne deriva che il concetto di appartenenza ad un insieme, così come quello di veridicità di un enunciato a cui è legato, è un concetto binario, può assumere cioè solo due valori distinti. Per comodità valori nell'insieme $\lbrace 0, 1 \rbrace$.
+La veridicità di un enunciato è quindi una funzione $f_E$ tale che
+\[
+f_E(x)=
+\begin{cases}
+0 & x \: \text{è falso} \\
+1 & x \: \text{è vero}
+\end{cases}
+\]
+L'appartenenza ad un generico insieme $A$, una funzione $\mu_A$ tale che
+\[
+\mu_A(\mathbf{x})=
+\begin{cases}
+0 & x \notin A \\
+1 & x \in A
+\end{cases}
+\]
+Una funzione di questo tipo viene chiamata \textit{funzione di appartenenza} ad $A$.
+L'utilizzo di proposizioni nella definizione di un insieme porta a una separazione netta tra gli elementi che appartengono all'insieme e quelli che invece non vi appartengono essendo una proposizione, per definizione, un enunciato di cui è possibile stabilire \emph{con certezza} il valore di verità.
+Non tutti gli insiemi definibili hanno però dei criteri di appartenenza precisi di tipo binario. Alcuni insiemi per loro stessa natura hanno confini che non sono nettamente delineabili: "Insieme delle persone giovani", "Numeri reali molto più grandi di 1". Costringere questi insieme in una visione binaria di appartenenza vorrebbe dire imporre un'età, precisa alla più piccola frazione del secondo possibile, passata la quale non si è più giovani ed un punto sulla linea dei reali che faccia da spartiacque tra i numeri molto più grandi di uno e quelli solamente più grandi. In entrambi i casi una rappresentazione in termini binari non coglierebbe a pieno la vera natura dei due insiemi.\\
+Un \textit{fuzzy set} è un insieme del tipo appena descritto, un insieme i cui confini risultano essere per natura sfocati e poco chiari. La rappresentazione di un fuzzy set viene effettuata mediante l'uso di una logica non binaria, \textit{logica fuzzy}, che permette ad un enunciato di assumere valori di veridicità nell'intervallo $[0,1]$, e conseguentemente di avere funzioni di appartenenza che restituiscano valori nello stesso intervallo.\\
+Quindi, per esempio, una possibile rappresentazione fuzzy per l'insieme $A=$"Numeri reali molto più grandi di 1" è
+\[
+\mu_A(\mathbf{x})=
+\begin{cases}
+0 & x \leq 1 \\
+\dfrac{x}{100} & 1 < x \leq 100 \\
+1 & x > 100
+\end{cases}
+\]
+Che meglio rappresenta in maniera più corretta il concetto di \emph{molto} più grande alla base della definizione dell'insieme.\\
+Nonostante l'appartenenza venga misurata con un numero compreso tra zero ed uno, il concetto di appartenenza fuzzy non ha niente a che vedere con la probabilità di un elemento di appartenere ad un certo insieme e la logica fuzzy non ha niente a che vedere con la probabilità che coinvolge variabili casuali non presenti nella logica fuzzy.\\
+La fuzziness è il risultato dell'imprecisione e dell'assenza di criteri chiari e ben definiti di appartenenza ad un insieme.
+\section{Definizione formale}
+Un fuzzy set è una collezione di oggetti con un grado continuo di appartenenza. Tale set è caratterizzato da una funzione che assegna ad ogni oggetto un grado di appartenenza tra zero e uno \cite{zadeh1965fuzzy}.\\\\
+\textbf{Formalmente.} Sia $X$ un insieme di punti in uno spazio, in cui il generico elemento di $X$ è scritto come $x$.\\
+Un \textit{fuzzy set} $A \in X$ è caratterizzato da una \textit{funzione di appartenenza} (o \textit{caratteristica}) $\mu_A(\mathbf{x})$ che associa ad ogni punto $x \in X$ un valore reale nell'intervallo $[0, 1]$, che rappresenta il \textit{grado di appartenenza} di $x$ ad $A$.
+\section{Estensione delle operazioni}
+Sia per un insieme fuzzy, sia per un insieme del tipo ordinario, il grado di appartenenza zero ha il significato di \emph{non} appartenenza all'insieme e il grado di appartenenza 1, ha invece il significato di appartenenza. I fuzzy set possono essere dunque visti come un'estensione dei set nel senso classico e questi ultimi come un caso particolare di fuzzy set, in cui la funzione di appartenenza è di tipo binario. Tutte le operazioni che si possono compiere con gli insiemi ordinari sono estendibili ai fuzzy set, e tutte le definizioni fuzzy sono riconducibili a quelle ordinarie.\\\\
+\textbf{Insieme vuoto.} Un fuzzy set $A$ è vuoto se e solo se
+\[ \mu_A(\mathbf{x}) = 0 \; \forall \; x \in X\] 
+\textbf{Uguaglianza.} Un fuzzy set $A$ e un fuzzy set $B$ sono uguali, scritto come $A=B$ se e solo se
+\[ \mu_A(\mathbf{x}) = \mu_B(\mathbf{x}) \; \forall \; x \in X\] 
+\textbf{Sottoinsiemi.} Un fuzzy set $A$ è sottoinsieme di un fuzzy set $B$, scritto come $A \subseteq B$ se e solo se
+\[ \mu_A(\mathbf{x}) \leq \mu_B(\mathbf{x}) \; \forall \; x \in X\] 
+\textbf{Complemento.} Il complemento di un fuzzy set $A$ è il fuzzy set $\bar{A}$, la cui funzione di appartenenza $\mu_{\bar{A}}$
+\[ \mu_{\bar{A}}(\mathbf{x}) = 1-\mu_A(\mathbf{x}) \; \forall \; x \in X\] 
+\textbf{Unione.} L'unione tra un fuzzy set $A$ ed un fuzzy set $B$ è un fuzzy set $C$, scritto $C=A \cup B$, la cui funzione di appartenenza $\mu_C$
+\[ \mu_C(\mathbf{x}) = \max[\mu_A(\mathbf{x}), \mu_B(\mathbf{x})] \; \forall \; x \in X\] 
+\textbf{Intersezione.} L'intersezione tra un fuzzy set $A$ ed un fuzzy set $B$ è un fuzzy set $C$, scritto $C=A \cap B$, la cui funzione di appartenenza $\mu_C$
+\[ \mu_C(\mathbf{x}) = \min[f_A(\mathbf{x}), f_B(\mathbf{x})] \; \forall \; x \in X\] 
+L'unione $A \cup B$ è anche definita come il \textit{più piccolo} fuzzy set $C$ che contiene sia $A$ che $B$. Viceversa l'intersezione $A \cap B$ è anche definita come il \textit{più grande} fuzzy set $C$ che è contenuto sia in $A$ che in $B$. Gli operatori $\cup$ e $\cap$ sono entrambi associativi. Due fuzzy set sono \textit{disgiunti} se la loro intersezione è l'insieme vuoto.
+\section{Fuzzy set di tipo 2}
+Come visto nella sezione precedente un fuzzy set modella un insieme i cui confini sono non ben definiti o incerti. Non vi è nessun tipo di incertezza invece nel grado di appartenenza $\mu_A(x)$ di un elemento $x$ all'insieme $A$ caratterizzato dalla funzione di appartenenza $\mu_A$. Infatti una \textit{membership function} definita come nel paragrafo 2.1 è di tipo deterministico. I fuzzy set caratterizzati da una funzione di tipo deterministico sono chiamati fuzzy set di tipo 1. I fuzzy set di tipo 2, al contrario, hanno una caratteristica non deterministica che estende l'incertezza dei confini anche al grado di appartenenza.\\
+Un fuzzy set di tipo 2 $A$, è caratterizzato da una funzione di appartenenza $\mu_{A}(x,u)$, $x \in X$ e $u \in J_x \subseteq [0, 1]$ \cite{mendel2002type}. Come per i fuzzy set del tipo 1 vale $0 \leq \mu_{A} \leq 1$. Ad ogni valore $x \in X$  corrisponde un piano bidimensionale i cui assi sono $u$ ed $\mu_{A}(x,u)$. L'insieme $J_x$ equivale al codominio della funzione di membership di tipo 1 per $x$ in $A$. Per ogni $x \in X$ ogni possibile incertezza di tipo 1 $u$ risulta così estesa mediante un ulteriore grado di incertezza $\mu(x,u)$.
+\chapter{Support Vectors}
+\section{Classificazione}
+Classificare significa assegnare oggetti a classi secondo criteri di affinità. Un problema di classificazione consiste nella costruzione di una legge $f_X: X \rightarrow Y$ che associa gli elementi del dominio $X$ alle \textit{etichette} appartenenti al codominio $Y$ dove ogni diversa etichetta individua una diversa classe.\\
+Nell'ambito del machine learning l'insieme $X$ è un sottoinsieme di $\mathbb{R}^d$, $X \subseteq \mathbb{R}^d$. Il generico elemento $x_i \in X$ è quindi un punto \textit{d}-dimensionale. Ciascuna delle $d$ dimensioni equivale ad una specifica \textit{feature} della famiglia di oggetti $X$. Il processo di costruzione di $f_X$ è detto \textit{apprendimento}. Durante la fase di apprendimento un algoritmo visiona un insieme del tipo $T=\lbrace (x_0,y_0), (x_1,y_1), \cdots, (x_n,y_n) \rbrace$,  dove la generica coppia $(x_i,y_i)$, con $x_i \in A \subset X$ e $y_i \in Y$, è un esempio di classificazione corretta di $x_i$ con l'etichetta $y_i$, e ne estrae un criterio di classificazione generale per tutti i punti appartenenti a $X$, cioè la funzione $f_X$. L'insieme $T$ prende il nome di \textit{training set}.\\
+Quando la cardinalità dell'insieme di arrivo è $|Y| = 2$, si parla di classificazione binaria. Per comodità di notazione e di calcolo da qui in poi verranno presentati esempi di classificazione binaria in cui l'insieme $Y$ delle possibili etichette è $Y=\lbrace -1, +1 \rbrace$.
+\subsection{Percettrone}
+Il percettrone è un classificatore binario a soglia.
+\[
+f_P(\mathbf{x})=
+\begin{cases}
++1 & \mathbf{w} \centerdot  \mathbf{x} > \theta \\
+-1 & \mathbf{w} \centerdot \mathbf{x} < \theta
+\end{cases}
+\]
+il vettore $\mathbf{w}$ è un vettore di pesi, delle stesse dimensioni del vettore di input $\mathbf{x}$. $\theta$ è la soglia discriminante nella classificazione di un punto. Se la somma delle componenti del vettore input $\mathbf{x}$ pesate secondo quelle del vettore $\mathbf{w}$ supera una certa soglia $\theta$, il percettrone da un responso \textit{positivo}, altrimenti \textit{negativo}. Il caso $\mathbf{w} \centerdot \mathbf{x} = \theta$ è considerato un caso sbagliato.\\
+L'iperpiano $\mathbf{w} \centerdot \mathbf{x} = \theta$ nello spazio separa la classe positiva da quella negativa. La classificazione tramite percettrone è quindi applicabile con classi \textit{linearmente separabili} nello spazio di definizione.\\
+La fase di apprendimento del piano $\mathbf{w} \centerdot \mathbf{x} = \theta$ consiste nell'aggiustare i valori di $\mathbf{w}$ verso un iperpiano separatore corretto per il training set visionato, secondo un algoritmo del genere
+\begin{enumerate}
+\item inizializzare il vettore $\mathbf{w}$ con il vettore nullo
+\item i=0
+\item $y' = \mathbf{w}  \centerdot x_i - \theta$
+\item Se $y' \cdot y_i < 0$ allora $\mathbf{w} = \mathbf{w} + \eta y x_i$
+\item i++
+\item Se $i < | \: T \: |$ torna a 3.
+\item Se esistono ancora errori di classificazione torna a 2.
+\end{enumerate}
+Superato il punto 7. l'iperpiano separatore, se esiste, sarà individuato da $\mathbf{w}  \centerdot \mathbf{x} = \theta$. In presenza di classi \textit{non} linearmente separabili il precedente algoritmo rimane bloccato in un loop infinito. Accettando di avere a che fare con classi non separabili l'algoritmo può essere modificato permettendo lo stop secondo alcuni criteri, per esempio un numero fissato di cicli, oppure fermarsi quando il numero di classificazioni errate smette di variare al variare di $\mathbf{w}$.\\
+L'istruzione 4. esegue l'aggiornamento di $\mathbf{w}$, facendo in modo che il nuovo $\mathbf{w}$ risulti spostato verso il vettore $x_i$ che mal classifica in quel momento. Il parametro $\eta$ definisce la misura dello spostamento e di conseguenza la velocità con cui $\mathbf{w}$ si avvicina alla soluzione. Un $\eta$ troppo grande potrebbe portare a una situazione di loop infinito in cui $\mathbf{w}$ continui ad aggiornarsi tra due valori, uno più grande, uno più piccolo della soluzione.\\
+Nell'algoritmo precedente la soglia $\theta$ è trattata come costante. È possibile permettere alla soglia di variare considerandola nulla e aggiungendo una variabile in coda, come nuova dimensione, al vettore $\mathbf{w}$ con il significato di soglia, e aggiungendo agli esempi $x_i$ con lo stesso metodo il peso -1. Il calcolo di $y'$ risulta identico a quello del punto 3. e la soglia è in grado di variare come ogni altra singola componente di $\mathbf{w}$.\\
+Infine chiamando $b = -\theta$ possiamo riscrivere $f_P$ come
+\[
+f_P(\mathbf{x})=
+\begin{cases}
++1 & \mathbf{w} \centerdot  \mathbf{x} + b > 0 \\
+-1 & \mathbf{w} \centerdot \mathbf{x} +b<  0
+\end{cases}
+\]
+Dove $mathbf{w} \centerdot  \mathbf{x} + b = 0$ risulta essere l'iperpiano separatore delle classi positiva e negativa.
+\subsection{Macchine a vettori di supporto}
+Una macchina a vettori di supporto, \textit{support vector machine}, SVM in breve, ha come scopo quello di trovare, non solo un iperpiano $\mathbf{w} \centerdot \mathbf{x} + b = 0$ che separi linearmente i dati, ma fare in modo che l'iperpiano minimizzi l'errore durante la fase di classificazione di punti al di fuori dell'insieme di training. Intuitivamente questo iperpiano è quello posizionato alla stessa distanza da entrambe le classi. La distanza di una classe da un piano equivale alla minima distanza punto-piano per un punto appartenente a quella classe. Utilizzare l'iperpiano equidistante dalle classi per la discriminazione tra le due consente ai nuovi punti di scostarsi da quelli del training set ed essere comunque correttamente classificati. Inoltre lo spostamento, in questo modo, può essere il più ampio possibile.\\
+La fase di apprendimento di una SMV consiste nella massimizzazione della distanza $\gamma$, variando i parametri $\mathbf{w}$ e $b$ dell'iperpiano separatore, soggetta al vincolo che per ogni punto $x_i $ valga
+\[
+y_i(\mathbf{w} \centerdot x_i + b) \geq \gamma
+\]
+Indicando con $w^*$, $b^*$ le soluzioni del precedente problema di massimizzazione sono individuati
+\begin{itemize}
+\item
+$\mathbf{w^*} \centerdot \mathbf{x} + b^* = 0$, l'iperpiano separatore.
+\item
+$\mathbf{w^*} \centerdot \mathbf{x} + b^* = \gamma$, l' iperpiano contenente i punti della classe positiva, più vicini al separatore.
+\item
+$\mathbf{w^*} \centerdot \mathbf{x} + b^* = - \gamma$, l' iperpiano contenente i punti della classe etichettata -1, più vicini al separatore.
+\end{itemize}
+I punti che soddisfano l'equazione $\mathbf{w^*} \centerdot \mathbf{x} + b^* = \pm \gamma$, si trovano esattamente a distanza $\gamma$ dal separatore e si trovano sul confine delle loro classi. Tali punti prendono il nome di \textit{support vectors} o \textit{vettori di supporto}.\\\\
+Scelta una coppia $(w^*, b^*)$ di soluzioni, è sempre possibile trovare una coppia $(kw^*, kb^*)$, $k>1$, anch'essa soluzione, per cui è sempre vero che $k\gamma > \gamma$. In altre parole, $\gamma$ non può essere massimizzata. La soluzione a questo problema consiste nella normalizzazione del vettore $\mathbf{w}$ e costringere $\gamma$ ad essere multiplo del vettore unità $\dfrac{\mathbf{w}}{\Vert \mathbf{w} \Vert}$. Questo cambia il problema di ottimizzazione nella minimizzazione di $\ \: \mathbf{w} \: |$ soggetta al vincolo che per ogni punto $x_i$
+\[
+y_i(\mathbf{w} \centerdot \mathbf{x}_i + b) \geq 1
+\]
+Risulta quindi 
+\[
+f_{svc}(\mathbf{x}) = 
+\begin{cases}
++1 & \mathbf{w} \centerdot x + b \geq 0 \\
+-1 & \mathbf{w} \centerdot x + b < 0
+\end{cases}
+\] 
+\subsection{Kernel Trick}
+Quello di utilizzare uno, o più, piani separatori è un buon metodo di classificazione in presenza di classi linearmente separabili. Al contrario, quando qualsiasi scelta per la coppia $(\mathbf{w} , b)$ produce un piano che mal classifica almeno un elemento del training set, usare la posizione rispetto all'iperpiano come metodo di classificazione produrrà ragionevolmente errori di classificazione anche per i nuovi punti non presenti nel training set. Una soluzione a questo tipo di situazione è trasformare i dati, in modo che siano linearmente separabili per classe, utilizzando il \textit{kernel trick}. L'idea che sta dietro al \textit{trucco}, è quella che punti \textit{d}-dimensionali, non separabili in \textit{d} dimensioni, potrebbero esserlo se trasportati in uno spazio a maggiore dimensionalità. Una funzione del genere $\phi : \mathbb{R}^d \rightarrow \mathbb{R}^D$, $D > d$,  è detta \textit{mapping} e trasporta punti di uno spazio in uno a maggiore dimensionalità aggiungendo le feature mancanti come funzione delle originali. Per sortire l'effetto di ottenere dati linearmente separabili un mapping deve poter proiettare in porzioni differenti dello spazio punti appartenenti a differenti classi. Per esempio, dato il training set non linearmente separabile $T= \lbrace [(0;3), a], [(3;0), a], [(1;2), b], [(2;1), b] \rbrace$ il mapping $\phi(x,y) = (x,y,xy)$ assegna valori bassi nella nuova dimensione per i punti della classe $a$, valori alti per la classe $b$. In questo modo il training set è separabile in tre dimensioni e il metodo svm applicabile.
+\[
+f_{K}(\mathbf{x})=
+\begin{cases}
++1 & \mathbf{w} \centerdot \phi(\mathbf{x}) + b > 0  \\ 
+-1 & \mathbf{w} \centerdot \phi(\mathbf{x}) + b < 0 
+\end{cases}
+\]
+\subsection{Dati non separabili}
+Esistono situazioni in cui l'utilizzo del kernel trick non è garanzia di separazione delle classi e situazioni in cui lasciare i dati non separati è funzionale alla risoluzione del problema di classificazione. Anche in questo caso nessuna coppia $(\mathbf{w}, b)$ individua un iperpiano che non commette errori di classificazione, che diventano necessariamente parte integrante della ricerca di un criterio di classificazione. Il migliore iperpiano apprendibile da un training set diventa quindi quello che commette il minor numero di errori, o gli errori più veniali, e allo stesso tempo si tiene sufficientemente distante dai confini delle due classi. Per questo motivo un piano incorre in una penalità ogni qualvolta classifica in modo errato un punto e ogni qual volta gli si avvicina ad una distanza minore di un certo $\gamma$, questi punti sono detti \textit{outliers} per il piano. Ogni penalità è pesata in base alla distanza punto-piano. Il piano che minimizza l'ammontare delle penalità $f(\mathbf{w}, b)$ è utilizzato per classificare i punti al di fuori del training set.
+\[
+f(\mathbf{w},b) = \dfrac{1}{2} \sum\limits_{i=1}^{d}w_i^2 + C\sum\limits_{i=1}^n \max \lbrace 0, 1-y_i(\sum\limits_{j=1}^d w_jx_{ij} + b) \rbrace 
+\]
+Il primo termine, in accordo con il fine di normalizzare il vettore $\mathbf{w}$ come visto nella sezione 2.1.2, favorisce $\mathbf{w}$ di piccole dimensioni, e inoltre ha una derivata facilmente calcolabile durante il processo di minimizzazione. Il parametro di \textit{tradeoff} $C$ indica quanto l'ammontare delle penalità pesa rispetto al precedente addendo. Valori bassi di $C$ ammettono più errori di classificazione ma allargano i margini piano-classi, valori alti di $C$ ammettono meno errori di classificazione ma diminuiscono i margini.
+Anche in questa situazione il criterio di classificazione è dato dalla
+\[
+f_{svc}(\mathbf{x}) = 
+\begin{cases}
++1 & \mathbf{w} \centerdot x + b \geq 0 \\
+-1 & \mathbf{w} \centerdot x + b < 0
+\end{cases}
+\] 
+Che differisce dalla precedente per il metodo di training dell'iperpiano $\mathbf{w} \centerdot x + b = 0$.
+\section{1-SVM}
+1-SVM è un particolare caso di classificazione mediante macchine a vettori di supporto in cui il numero di classi presenti nel problema di classificazione è uno. Distribuire punti all'interno di una singola classe non significa costruire una funzione che restituisce l'unica possibile etichetta per ogni possibile valore di input ma racchiudere all'interno della più piccola possibile porzione di spazio i punti di un training set ammettendo alcuni \textit{outliers}. Formalmente, dato uno spazio $X = \lbrace x_1, x_2, \cdots, x_n \rbrace$, $X \in \mathbb{R}^d$ e un mapping $\phi : \mathbb{R}^d \rightarrow \mathbb{R}^D$, $D > d$, il problema di classificazione 1-SVM si riconduce alla ricerca, nello spazio ad alta dimensionalità, della più piccola (\textit{iper})sfera di raggio $R$ e centro $\mathbf{a}$ che racchiuda in se tutti i punti appartenenti allo spazio $X$. Che significa minimizzare $R$ sotto il vincolo che per ogni $x_i \in X$ valga
+\[
+\parallel \phi(x_i) - \mathbf{a} \parallel^2 \leq R^2 + \xi_i
+\]
+Dove $\xi_i > 0 \; \forall \; i \in \lbrace 1, \cdots, n \rbrace$ sono variabili di slack. Così facendo non sono ammessi \textit{outliers}.\\
+Al fine di individuare degli outliers è necessario modificare il problema di minimizzazione similmente a come visto in 2.1.4, in \cite{ben2001support} tramite minimizazione della funzione lagrangiana
+\[
+L = R^2 - \sum_i^n ( R^2 + \xi_i - \parallel \phi(x_i) - \mathbf{a} \parallel^2 ) \beta_i - \sum_i^n \xi_i\mu_i + C \sum_i^n \xi_i 
+\]
+Il primo addendo regola la misura del raggio, la prima sommatoria l'ampiezza dei margini tra la superficie della sfera e gli outliers, il termine $ \sum_i^n \xi_i$ è un termine di penalità pesato per il parametro di tradeoff $C$. $\beta_i$, $\mu_i$ sono moltiplicatori lagrangiani.\\
+Passando alla forma duale di Wolfe dalla funzione $L$ vengono eliminate successivamente le variabili $R$, $\mathbf{a}$ e $\mu_i$
+\[
+W = \beta_i  \sum_i^n \phi(x_i)^2- \sum_i^n\sum_j^n \beta_i \beta_j \phi(x_i) \centerdot \phi(x_j)
+\]
+e sostituite con il vincolo
+\[
+0 \leq \beta_i \leq C \text{,} \; i \in \lbrace 1, \cdots, n \rbrace
+\]
+Inoltre il prodotto vettoriale $phi(x_i) \centerdot \phi(x_j)$ può essere rappresentato tramita la kernel function utilizzata.
+\[
+W = \sum_i^n \beta_i K(x_i,x_i) - \sum_i^n\sum_j^n \beta_i \beta_j K(x_i,x_j)
+\]
+Dopo la minimizzazione di $W$ ogni $\beta_i$ viene classificata nel seguente modo
+\begin{enumerate}
+\item $\beta_i = 0$, allora l'immagine di $x_i$ secondo $\phi$ si trova all'interno della sfera.
+\item $0 < \beta_i < C$, allora l'immagine di $x_i$ si trova sulla superficie della sfera, $\beta_i$ è un vettore di supporto.
+\item$\beta_i = C$, allora l'immagine di $x_i$ è mappata al di fuori della sfera, $x_i$ è considerato un outlier.
+\end{enumerate}
+A classificazione avvenuta il raggio $R$ della sfera risulta essere uguale alla distanza dal centro di uno dei support vector. La distanza di un generico punto $x$ dal centro della sfera può essere calcolata mediante
+\[
+D(x) = k(x,x) - 2\sum_i^n \beta_i K(x_i,x) + \sum_i^n \sum_j^n \beta_i \beta_j K(x_i, x_j)
+\]
+\section{Clustering}
+È possibile utilizzare 1-SVM per la risoluzione di problemi di clustering. Applicando il procedimento precedentemente descritto su un insieme di punti $x_i \in X$ si ottiene una sfera che, ammettendo alcuni outlier, ingloba le immagini $\phi(x_i)$ in uno spazio $F$ ad alta dimensionalità. Di questa sfera è possibile conoscere il raggio e una funzione $D(x)$ che dato un punto $x'$ appartenente allo stesso spazio di $X$ restituisce la distanza di $\phi(x')$ dal centro della sfera. Conoscendo queste informazione è possibile costruire un metodo per la divisione dei punti $x_i \in X$ in diversi cluster. Due punti sono considerati appartenere allo stesso cluster se ogni punto del segmento che li unisce, mappato nello spazio $F$, si trova all'interno della sfera. Costruendo un grafo avente come nodi tutti i possibili $x_i$ e tracciando un arco tra il nodo $i$ ed il nodo $j$ solo se tutti i punti del segmento $\bar{x_ix_j}$ sono mappati all'interno della sfera, le diverse componenti connesse del grafo corrispondono ai vari cluster in cui è scomposto $X$.\\
+Non essendo possibile controllare gli infiniti punti di un segmento $s$, questo viene discretizzato in $p$ punti e per ogni $p$ viene applicata $D(p)$. Se risulta almeno una $D(p) > R$ i due punti collegati da $s$ \textit{non} appartengono allo stesso cluster.
+\bibliographystyle{plain}
+\bibliography{tesi.bib}
+\end{document}
