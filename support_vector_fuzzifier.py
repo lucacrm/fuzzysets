@@ -97,7 +97,7 @@ def associate_fs_to_labels(x, y, membership_functions, force_num_fs, force_label
             
         else:
             if force_num_fs:
-                i = get_different_labels(function_labels)
+                i = ut.get_different_labels(function_labels)
                 return list(np.array(membership_functions)[i]), list(np.array(function_labels)[i])
             else:
                 return membership_functions, function_labels
@@ -199,12 +199,23 @@ def validate(x, y, membership_functions, function_labels, resolve_conflict, loss
     '''
     
     function_labels = np.array(function_labels)
-    results = np.array([[f(p) for f in membership_functions] for p in x])  
+    print 'function_labels\n', function_labels
+    print '\n'
+    results = np.array([[f(p) for f in membership_functions] for p in x])
+    print 'results\n', results
+    print '\n'
     maxs = np.array([np.max(r) for r in results])
+    print 'maxs\n', maxs
+    print'\n'
     results = [pd.Series(r) for r in results]
+    print 'results\n', results
+    print'\n'
     candidates = []
     for i in range(len(results)):
         candidates.append(results[i][results[i]==maxs[i]].keys().values)
+        
+    print 'candidates\n', candidates
+    print'\n'
 
     if resolve_conflict == 'random':
         guessed_labels = function_labels[[np.random.choice(c) for c in candidates]]
@@ -282,7 +293,7 @@ def validate_fs(x, y, membership_functions, function_labels, resolve_conflict, t
 
         
 
-def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01, fuzzifier=LinearFuzzifier(), muzzifier=BinaryMuzzifier(), top_k=None, force_num_fs=False, force_labels_repr=False, same_c=True, resolve_conflict='random', loss=None, all_links=False, name='ITERATE TESTS', save_graph=False, pretty=False):
+def iterate_tests(x, y, cs, sigmas, iterations=10, dim=2, seed=None, min_size=0.01, fuzzifier=LinearFuzzifier(), muzzifier=BinaryMuzzifier(), top_k=None, force_num_fs=False, force_labels_repr=False, same_c=True, resolve_conflict='random', loss=None, all_links=False, name='ITERATE TESTS', save_graph=False, pretty=False):
     
     '''
     Iterate the procedure of model selection and validation
@@ -365,8 +376,6 @@ def iterate_tests(x, y, cs, sigmas, iterations, dim=2, seed=None, min_size=0.01,
             try:
                 mf, clusters_index = learn_fs(train_set, c, c1, GaussianKernel(sigma), min_size, fuzzifier, muzzifier, all_links)
                 
-                #print 'clusters with index ', clusters_index
-            
                 #associate membership functions to labels
                 membership_functions, function_labels = associate_fs_to_labels(train_set, y[[i for i in train_index]], mf, force_num_fs=force_num_fs, force_labels_repr=force_labels_repr)
                 

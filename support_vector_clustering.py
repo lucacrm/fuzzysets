@@ -152,8 +152,7 @@ def clustering(x, kernel, c, all_links):
     - x: array of points to be clustered
     - kernel: Kernel for the trasformation of data in an high-dimensional space
     - c: trade-off parameter
-    - labels: array of labels
-    - graph: if True plot graphs showing which point are classified support vectors
+    - all-links: if True all couples of points are checked during clusterization, if False only support vectors couples
     
     Returns (clusters, radius), where
     
