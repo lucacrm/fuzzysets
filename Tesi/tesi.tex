@@ -46,8 +46,9 @@ Tesi di Laurea di:\\ Luca CERMENATI\\ Matricola: 868106
 \end{titlepage}
 \tableofcontents
 \chapter*{Introduzione}
-Secondo i criteri classici di appartenenza a un insieme, è sempre possibile stabilire se un elemento ne è parte oppure se non lo è. D'altro canto, alcune classi di oggetti, per loro stessa natura, non possono essere definiti tramite criteri d'appartenenza precisi e demarcati. In letteratura questi insiemi sono noti come insiemi fuzzy. L'obiettivo di questa tesi è presentare un metodo per l'apprendimento di tali classi di oggetti partendo da un insieme di dati e, in particolare, apprendere molteplici insiemi fuzzy in modo simultaneo. Il procedimento proposto è un'estensione e un adattamento dell'algoritmo di \textit{support vector clustering}. Inoltre, nella costruzione di tale procedimento ci si avvale di lavori precedenti riguardanti l'apprendimento di un singolo insieme fuzzy. Una volta definito analiticamente, l'algoritmo di apprendimento simultaneo è stato implementato e validato attraverso una serie di esperimenti su un insieme di dati noto nell'ambito dell'apprendimento automatico. I risultati ottenuti sono stati in seguito confrontati con quelli di algoritmi noti, mostrando come l'algoritmo proposto risulti essere in media più accurato.\\
-Il lavoro è presentato nella maniera seguente. Nel primo capitolo viene introdotto il concetto di insieme fuzzy e ne viene fornita una definizione formale presentandone proprietà, differenze e analogie con gli insiemi intesi come nel senso classico. Nel secondo capitolo sono introdotti i concetti base riguardanti i problemi di classificazione e i diversi metodi di risoluzione riguardanti le support vector machine. Questi concetti sono alla base del metodo di support vector clustering, trattato anch'esso all'interno del secondo capitolo, su cui si poggia il metodo di apprendimento proposto. Nel terzo capitolo viene mostrato un approccio per l'apprendimento di un unico fuzzy set. Quest'ultimo è accompagnato da un esempio di utilizzo nel caso supervisionato. Infine nel quarto ed ultimo capitolo viene proposta la procedura per l'apprendimento simultaneo, sia in modo analitico che in modo pratico. Verranno presentate nello specifico le metodologie di validazione e presentati i risultati ottenuti durante la fase sperimentale con alcune conclusioni a riguardo. A queste seguirà un paragrafo relativo alla complessità dell'algoritmo. Nell'ultimo capitolo sono lasciati degli spunti per possibili estensioni future.
+\addcontentsline{toc}{chapter}{Introduzione}
+Secondo i criteri classici di appartenenza a un insieme, è sempre possibile stabilire se un elemento ne è parte oppure no. D'altro canto, alcune classi di oggetti, per loro stessa natura, non possono essere definite tramite criteri d'appartenenza precisi e demarcati. In letteratura questi insiemi sono noti come insiemi fuzzy. L'obiettivo di questa tesi è presentare un metodo per l'apprendimento di tali classi di oggetti partendo da un insieme di dati e, in particolare, apprendere molteplici insiemi fuzzy in modo simultaneo. Il procedimento proposto è un'estensione e un adattamento dell'algoritmo di \textit{support vector clustering}. Inoltre, nella costruzione di tale procedimento ci si avvale di lavori precedenti riguardanti l'apprendimento di un singolo insieme fuzzy. Una volta definito analiticamente, l'algoritmo di apprendimento simultaneo è stato implementato e validato attraverso una serie di esperimenti su un insieme di dati noto nell'ambito dell'apprendimento automatico. I risultati ottenuti sono stati in seguito confrontati con quelli di algoritmi noti, mostrando come l'algoritmo proposto risulti essere in media più accurato.\\
+Il lavoro è presentato nella maniera seguente. Nel primo capitolo viene introdotto il concetto di insieme fuzzy e ne viene fornita una definizione formale presentandone proprietà, differenze e analogie con gli insiemi intesi come nel senso classico del termine. Nel secondo capitolo sono introdotti i concetti base riguardanti i problemi di classificazione e i diversi metodi di risoluzione riguardanti le support vector machine. Il secondo capitolo illustra anche il metodo di support vector clustering, basato sulle support vector machine, sul quale si poggia il metodo di apprendimento proposto. Nel terzo capitolo viene mostrato un approccio per l'apprendimento di un unico fuzzy set, unitamente a un esempio di utilizzo nel caso supervisionato. Infine, nel quarto e ultimo capitolo viene proposta la procedura per l'apprendimento di più fuzzy set, derivandola analiticamente e illustrandone alcuni esempi pratici. Vengono presentate nello specifico le metodologie di validazione e i risultati ottenuti durante la fase sperimentale, commentando gli esiti ottenuti. Segue quindi un paragrafo relativo alla complessità dell'algoritmo. Il lavoro termina con delle conclusioni in cui sono lasciati degli spunti per possibili estensioni future.
 \chapter{Insiemi fuzzy}
 \section{Il concetto di fuzziness}
 La logica classica poggia su due valori di verità differenti e opposti, \textit{vero} e \textit{falso}. Ogni enunciato affrontabile secondo i criteri della logica classica deve essere una \textit{proposizione}; deve essere cioè possibile dire con \textit{certezza} se l'enunciato è vero o in alternativa se è falso. Quindi gli enunciati ``Luca è alto 180 cm'' e ``3 è maggiore di 5'' sono proposizioni, mentre l'enunciato ``Milano è una bella città'' non è una proposizione. Rappresentare un insieme in maniera \textit{intensiva} significa scrivere un enunciato generalizzato che catturi una caratteristica comune a tutti e soli gli elementi appartenenti all'insieme che si vuole rappresentare. Per esempio $\lbrace x \in \mathbb{R} \: | \: x>0 \rbrace$ esprime la caratteristica di essere un numero reale e di essere maggiore di zero, ed è la rappresentazione intensiva dell'insieme dei numeri reali positivi. Preso un singolo elemento $x$, l'enunciato generale della rappresentazione intensiva diventa una proposizione. A stabilire se l'elemento considerato è parte oppure no dell'insieme è la veridicità della proposizione ottenuta. Ne deriva che il concetto di appartenenza a un insieme, così come quello di veridicità di un enunciato a cui è legato, è un concetto binario, può assumere cioè solo due valori distinti. Per comodità questi valori vengono codificati considerando gli elementi dell'insieme $\lbrace 0, 1 \rbrace$. La veridicità di un enunciato è quindi una funzione $v(\cdot)$ tale che
@@ -81,7 +82,7 @@ Una funzione di questo tipo viene chiamata \textit{funzione di appartenenza} (o 
 \caption{Grafico delle funzioni di appartenenza all'insieme ``Numeri molto più grandi di 1'' nelle versioni crisp e fuzzy \label{fuzzycrisp}}
 \end{figure}che meglio rappresenta il concetto di \textit{molto} più grande alla base della definizione dell'insieme $A$. La \figurename~\ref{fuzzycrisp} mostra una rappresentazione grafica di questa funzione di appartenenza, sovrapposta a un'analoga rappresentazione del concetto di appartenenza per un insieme \textit{crisp}.\\
 Nonostante l'appartenenza venga misurata con un numero compreso tra zero e uno, il concetto di appartenenza fuzzy non ha niente a che vedere con la probabilità che un elemento ha di appartenere a un certo insieme e la logica fuzzy non ha niente a che vedere con la probabilità che coinvolge variabili casuali e tratta di eventi e della loro possibilità di verificarsi. La \textit{fuzziness} è il risultato dell'imprecisione e dell'assenza di criteri chiari e ben definiti di appartenenza a un insieme.\\
-Pertanto un insieme fuzzy è una collezione di oggetti con un grado non binario di appartenenza. Tale insieme è caratterizzato da una funzione che assegna a ogni oggetto un grado di appartenenza tra zero e uno, come formalmente indicato nella definizione seguente\cite{zadeh1965fuzzy}.
+Pertanto un insieme fuzzy è una collezione di oggetti con un grado non binario di appartenenza. Tale insieme è caratterizzato da una funzione che assegna a ogni oggetto un grado di appartenenza tra zero e uno, come formalmente indicato nella definizione seguente  \cite{zadeh1965fuzzy}.
 \begin{fuzzyset}
 Sia $\Omega$ un insieme di punti in uno spazio, il cui generico elemento di $\Omega$ è denotato usando il simbolo $x$. Un \textit{insieme fuzzy} (o \textit{fuzzy set}) $A \subseteq \Omega$ è caratterizzato da una funzione di \textit{appartenenza} (o \textit{membership function}) $\mu_{A}(\cdot)$ che associa a ogni punto $x \in \Omega$ un valore reale nell'intervallo $[0,1]$, che rappresenta il \textit{grado di appartenenza} di $x$ a $A$.
 \end{fuzzyset}
@@ -112,7 +113,7 @@ Sia per un insieme fuzzy, sia per un insieme del tipo ordinario, il grado di app
 Va notato come queste estensioni non siano necessariamente uniche. Per esempio l'unione $A \cup B$ si può definire come il \textit{più piccolo} insieme fuzzy $C$ che contiene sia $A$ che $B$. Viceversa l'intersezione $A \cap B$ può essere definita come il \textit{più grande} insieme fuzzy $C$ che è contenuto sia in $A$ che in $B$. In entrambi i casi gli operatori $\cup$ e $\cap$ sono associativi.
 %è possibile aggiungere esempi con immagini se necessario%
 \section{Insiemi fuzzy di tipo 2}
-Come visto nel paragrafo precedente, un fuzzy set modella un insieme i cui confini non sono ben definiti o sono incerti. Non vi è nessuno tipo di incertezza invece riguardo al grado di appartenenza $\mu_A(x)$ di un elemento $x$ a un insieme $A$. Gli insiemi fuzzy caratterizzati da una funzione di appartenenza \textit{non} incerta sono definiti insiemi fuzzy di tipo 1. Al contrario, gli insiemi fuzzy di tipo 2 ammettono funzioni di appartenenza incerte\cite{mendel2002type}.
+Come visto nel paragrafo precedente, un fuzzy set modella un insieme i cui confini non sono ben definiti o sono incerti. Non vi è nessuno tipo di incertezza invece riguardo al grado di appartenenza $\mu_A(x)$ di un elemento $x$ a un insieme $A$. Gli insiemi fuzzy caratterizzati da una funzione di appartenenza \textit{non} incerta sono definiti insiemi fuzzy di tipo 1. Al contrario, gli insiemi fuzzy di tipo 2 ammettono funzioni di appartenenza incerte \cite{mendel2002type}.
 \begin{fuzzyset2}
 Un insieme fuzzy di tipo 2 $A$ è caratterizzato da una funzione di appartenenza $\mu_A(x,u)$, con $x \in \Omega$ e $u \in J_x \subseteq [0,1]$. Come per i fuzzy set del tipo 1 vale sempre $0 \leq \mu_A(x,u) \leq 1$.
 \end{fuzzyset2}
@@ -121,7 +122,7 @@ Il valore $u$ equivale al grado di appartenenza $\mu_A(x)$ di $x$ all'insieme fu
         \centering%
         \subfigure[Grafico di una funzione di appartenenza di tipo 2\label{fuzzy11}]%
           {\includegraphics[scale=.45]{figure/fuzzy11.pdf}}\qquad\qquad
-        \subfigure[Ad ogni valore $x \in \Omega$ corrisponde un piano i cui assi sono $u$ e $\mu_A(x,u)$. In evidenza il piano corrispondente a $x_1$\label{fuzzy12}]%
+        \subfigure[A ogni valore $x \in \Omega$ corrisponde un piano i cui assi sono $u$ e $\mu_A(x,u)$. In evidenza il piano corrispondente a $x_1$\label{fuzzy12}]%
           {\includegraphics[scale=.45]{figure/fuzzy12.pdf}}
           \caption{Insiemi fuzzy di tipo 2.}
 \end{figure}
@@ -130,7 +131,7 @@ Il valore $u$ equivale al grado di appartenenza $\mu_A(x)$ di $x$ all'insieme fu
 Classificare significa assegnare oggetti a classi secondo criteri di affinità. Un problema di classificazione consiste nella costruzione di una regola $f: \Omega \rightarrow Y$ che associa gli elementi del dominio $\Omega$ alle \textit{etichette} appartenenti al codominio $Y$ dove ogni diversa etichetta individua una diversa classe. L'insieme $\Omega$ tipicamente è un sottoinsieme $\Omega \subseteq \mathbb{R}^d$. Il generico elemento di $\Omega$ è quindi un punto \textit{d}-dimensionale. Ciascuna delle \textit{d} dimensioni equivale a una specifica \textit{feature} della famiglia di oggetti $\Omega$. Nell'ambito del machine-learning il processo di costruzione della regola $f$ è detto \textit{apprendimento}. Durante la fase di apprendimento , un algoritmo visiona un insieme di esempi $T=\lbrace (x_0,y_0), (x_1,y_1), \cdots, (x_n,y_n) \rbrace$, dove la generica coppia $(x_i,y_i)$, con $x_i \in X \subseteq \Omega$ e $y_i \in Y$, è un esempio di classificazione corretta di $x_i$ con l'etichetta $y_i$, e ne estrae un criterio di classificazione generale per tutti i punti appartenenti a $\Omega$, cioè la funzione $f(\cdot)$. L'insieme $T$ prende il nome di \textit{training set}.\\
 La notazione $x_i$ indica il primo elemento della \textit{i}-esima coppia appartenente a un training set. Mentre la notazione $x_{i}^{(j)}$ indica la \textit{j}-esima componente del vettore $x_i$. Quando la cardinalità dell'insieme di arrivo è $|Y|=2$, si parla di classificazione binaria. Per comodità di notazione e di calcolo da qui in poi verranno presentati esempi di classificazione binaria in cui l'insieme $Y$ delle possibili etichette è $Y=\lbrace-1,1\rbrace$.
 \subsection{Percettrone}
-Il percettrone\cite{rosenblatt1958perceptron} è un classificatore binario a soglia che assegna un oggetto $x \in \Omega$ alla classe ottenuta utilizzando la seguente regola:
+Il percettrone \cite{rosenblatt1958perceptron} è un classificatore binario a soglia che assegna un oggetto $x \in \Omega$ alla classe ottenuta utilizzando la seguente regola:
 \begin{equation}
 f_P(x)=
 \begin{cases}
@@ -152,9 +153,9 @@ dove $w$ è un vettore di pesi delle stesse dimensioni del vettore di input $x$,
 \EndWhile
 \end{algorithmic}
 \end{algorithm}
-Si può dimostrare\cite{rosenblatt1958perceptron} che quando le due classi sono linearmente separabili, il Punto 9.\ viene superato dopo un numero finito di iterazioni. In tal caso, l'iperpiano separatore è individuato da $w^* \boldsymbol{ \cdot} x = \theta$, dove $w^*$ è il valore di $w$ al termine dell'esecuzione dell'Algoitmo \ref{iperpiano}. In presenza di classi \textit{non} linearmente separabili il precedente algoritmo rimane bloccato in un loop infinito.  L'Istruzione 5.\ esegue l'aggiornamento di $w$, facendo in modo che il nuovo $w$ risulti spostato verso il vettore $x_i$ che è mal classificato in quel momento. Il parametro $\eta > 0$ definisce la misura dello spostamento e di conseguenza la velocità con cui $w$ si avvicina alla soluzione. Un $\eta$ troppo grande potrebbe portare a una situazione di loop infinito in cui $w$ continua ad aggiornarsi tra due valori, uno più grande, uno più piccolo della soluzione, o anche a far divergere $w$. Nell'Algoritmo \ref{iperpiano} la soglia $\theta$ è trattata come costante. È possibile permettere alla soglia di variare eliminandola di fatto dalla formalizzazione e aggiungendo una variabile in coda, come nuova dimensione, al vettore $w$. Aggiungendo agli esempi $x_i$ con lo stesso metodo il peso -1 il calcolo di $y'$ risulta analogo a quello del punto 3 e la soglia è in grado di variare come ogni altra singola componente di $w$. Accettando di avere a che fare con classi non separabili l'algoritmo può essere modificato permettendo lo stop secondo alcuni criteri, per esempio eseguendo un numero fissato di cicli, oppure fermandosi quando il numero di classificazioni errate smette di variare al variare di $w$.
+Si può dimostrare \cite{rosenblatt1958perceptron} che quando le due classi sono linearmente separabili, il Punto 9.\ viene superato dopo un numero finito di iterazioni. In tal caso, l'iperpiano separatore è individuato da $w^* \boldsymbol{ \cdot} x = \theta$, dove $w^*$ è il valore di $w$ al termine dell'esecuzione dell'Algoitmo \ref{iperpiano}. In presenza di classi \textit{non} linearmente separabili il precedente algoritmo rimane bloccato in un loop infinito.  L'Istruzione 5.\ esegue l'aggiornamento di $w$, facendo in modo che il nuovo $w$ risulti spostato verso il vettore $x_i$ che è mal classificato in quel momento. Il parametro $\eta > 0$ definisce la misura dello spostamento e di conseguenza la velocità con cui $w$ si avvicina alla soluzione. Un $\eta$ troppo grande potrebbe portare a una situazione di loop infinito in cui $w$ continua ad aggiornarsi tra due valori, uno più grande, uno più piccolo della soluzione, o anche a far divergere $w$. Nell'Algoritmo \ref{iperpiano} la soglia $\theta$ è trattata come costante. È possibile permettere alla soglia di variare eliminandola di fatto dalla formalizzazione e aggiungendo una variabile in coda, come nuova dimensione, al vettore $w$. Aggiungendo agli esempi $x_i$ con lo stesso metodo il peso -1 il calcolo di $y'$ risulta analogo a quello del punto 3 e la soglia è in grado di variare come ogni altra singola componente di $w$. Accettando di avere a che fare con classi non separabili l'algoritmo può essere modificato permettendo lo stop secondo alcuni criteri, per esempio eseguendo un numero fissato di cicli, oppure fermandosi quando il numero di classificazioni errate smette di variare al variare di $w$.
 \subsection{Macchine a vettori di supporto}
-Una macchina a vettori di supporto\cite{cortes1995support}, \textit{support vector machine}, o SVM in breve, ha come scopo non solo quello di trovare un iperpiano $w \boldsymbol{\cdot} x + b = 0$ che separi linearmente i dati, ma anche di fare in modo che l'iperpiano minimizzi l'errore durante la fase di classificazione di punti al di fuori dell'insieme di training. Questo iperpiano è quello posizionato alla stessa distanza da entrambe le classi. La distanza di una classe da un piano equivale alla minima distanza punto-piano misurata per ogni punto appartenente alla classe. Questa distanza viene definita \textit{margine}. Utilizzare l'iperpiano equidistante dalle classi per la discriminazione tra le due permette di massimizzare il margine e ottenere così una migliore generalizzazione, cioè una migliore capacità di classificare correttamente anche punti non presenti nel training set. In  \figurename~\ref{margine} la rappresentazione grafica di quanto descritto finora.
+Una macchina a vettori di supporto \cite{cortes1995support}, \textit{support vector machine}, o SVM in breve, ha come scopo non solo quello di trovare un iperpiano $w \boldsymbol{\cdot} x + b = 0$ che separi linearmente i dati, ma anche di fare in modo che l'iperpiano minimizzi l'errore durante la fase di classificazione di punti al di fuori dell'insieme di training. Questo iperpiano è quello posizionato alla stessa distanza da entrambe le classi. La distanza di una classe da un piano equivale alla minima distanza punto-piano misurata per ogni punto appartenente alla classe. Questa distanza viene definita \textit{margine}. Utilizzare l'iperpiano equidistante dalle classi per la discriminazione tra le due permette di massimizzare il margine e ottenere così una migliore generalizzazione, cioè una migliore capacità di classificare correttamente anche punti non presenti nel training set. In  \figurename~\ref{margine} la rappresentazione grafica di quanto descritto finora.
 \begin{figure}[!h]
 \centering
 \includegraphics[scale=.6]{figure/margine.pdf}
@@ -200,7 +201,7 @@ dove ogni $\alpha_i \geq 0$ è un moltiplicatore lagrangiano, permette di inglob
 \item[]\begin{equation}\label{b}\dfrac{\partial L}{\partial b} = 0 \Longrightarrow \sum_{i=1}^n \alpha_i y_i = 0.
 \end{equation}
 \end{itemize}
-Questi risultati, sostituiti in \eqref{lagrange}, portano a quello che è definito \textit{problema duale}\cite{fletcher1987practical}: massimizzare, variando le nuove variabili $\alpha_i$,
+Questi risultati, sostituiti in \eqref{lagrange}, portano a quello che è definito \textit{problema duale} \cite{fletcher1987practical}: massimizzare, variando le nuove variabili $\alpha_i$,
 \begin{equation}\label{duale}
 L_D = \sum_{i=1}^n \alpha_i -\dfrac{1}{2} \sum_{i,j}^n \alpha_i \alpha_j y_i y_j x_i \boldsymbol{\cdot} x_j
 \end{equation}
@@ -211,7 +212,7 @@ soggetta ai vincoli
 \begin{equation}
 \sum_{i=1}^n \alpha_i y_i = 0.
 \end{equation}
-Inoltre, per le condizioni di Karush-Kuhn-Tucker\cite{kuhn1951proceedings} (condizioni KKT), deve valere per ogni $i \in \lbrace 1, \cdots, n \rbrace$ 
+Inoltre, per le condizioni di Karush-Kuhn-Tucker \cite{kuhn1951proceedings} (condizioni KKT), deve valere per ogni $i \in \lbrace 1, \cdots, n \rbrace$ 
 \begin{equation}
 \alpha_i[y_i(w \boldsymbol{\cdot} + b -1)] = 0.
 \end{equation}
@@ -233,7 +234,7 @@ f_K(x)=
 -1 & \textit{se } w^* \boldsymbol{\cdot} \phi(x)  + b^*< 0.
 \end{cases}
 \end{equation}
-La denominazione \textit{kernel trick} deriva dal fatto che il trucco è utilizzato in coppia con funzioni denominate \textit{kernel function}\cite{shawe2004kernel}. Considerato un mapping $\phi$, una kernel function $K$ è definita in modo tale che sia sempre valido
+La denominazione \textit{kernel trick} deriva dal fatto che il trucco è utilizzato in coppia con funzioni denominate \textit{kernel function} \cite{shawe2004kernel}. Considerato un mapping $\phi$, una kernel function $K$ è definita in modo tale che sia sempre valido
 \begin{equation}
 K(x_i,x_j) = \phi(x_i) \boldsymbol{\cdot} \phi{x_j}.
 \end{equation}
@@ -253,7 +254,7 @@ L_D = \sum_{i=1}^n \alpha_i -\dfrac{1}{2} \sum_{i,j}^n \alpha_i \alpha_j y_i y_j
           {\includegraphics[scale=0.4]{figure/mapping22.pdf}}
           \caption{Training set degli esempi 1 e 2. A sinistra nello spazio originale, a destra dopo la trasformazione in più dimensioni.}
 \end{figure}\linebreak
-Nei capitoli successivi ogniqualvolta si fa riferimento a una funzione kernel si intende una funzione kernel di tipo gaussiano\cite{vert2004primer} così definita:
+Nei capitoli successivi ogniqualvolta si fa riferimento a una funzione kernel si intende una funzione kernel di tipo gaussiano \cite{vert2004primer} così definita:
 \begin{equation}
 \phi(x) = e^{-\dfrac{x^2}{2\sigma^2}} [1, \sqrt{\dfrac{1}{1! \sigma^2}}x, \sqrt{\dfrac{1}{2! \sigma^4}}x^2, \sqrt{\dfrac{1}{3!\sigma^6}}x^3, \cdots]^T.
 \end{equation}
@@ -262,7 +263,7 @@ La particolarità del kernel gaussiano è quella di mappare punti in un insieme 
 K(x_i,x_j) = e^{-\dfrac{\parallel x_i - x_j \parallel^2}{2\sigma^2}}.
 \end{equation}
 \subsection{Dati non linearmente separabili}
-L'utilizzo del kernel trick non è sempre garanzia di separazione lineare delle classi. Inoltre in alcune situazioni lasciare che i dati siano non separabili è funzionale alla risoluzione del problema di classificazione. Anche in questo caso nessuna coppia $(w^*,b^*)$ individua un iperpiano che non commette errori di classificazione. Non potendo essere eliminati totalmente, gli errori di classificazione diventano parte integrante della ricerca del criterio di classificazione. Il migliore iperpiano apprendibile da un training set diventa allora quello che commette il minor numero di errori, o gli errori più veniali, e si mantiene sufficientemente lontano dai confini delle classi. Un iperpiano incorre in una penalità ogniqualvolta classifichi in modo errato un punto o gli si avvicini a una distanza minore di un certo $\gamma$. I punti classificati correttamente ma troppo vicini al piano vengono definiti \textit{outliers}(\figurename~\ref{outliers}). Ogni penalità è pesata in base alla distanza del punto dall'iperpiano. Il piano che minimizza l'ammontare $l(w,b)$ della penalità è quello poi utilizzato per classificare i punti al di fuori del training set.
+L'utilizzo del kernel trick non è sempre garanzia di separazione lineare delle classi. Inoltre in alcune situazioni lasciare che i dati siano non separabili è funzionale alla risoluzione del problema di classificazione. Anche in questo caso nessuna coppia $(w^*,b^*)$ individua un iperpiano che non commette errori di classificazione. Non potendo essere eliminati totalmente, gli errori di classificazione diventano parte integrante della ricerca del criterio di classificazione. Il migliore iperpiano apprendibile da un training set diventa allora quello che commette il minor numero di errori, o gli errori più veniali, e si mantiene sufficientemente lontano dai confini delle classi. Un iperpiano incorre in una penalità ogniqualvolta classifichi in modo errato un punto o gli si avvicini a una distanza minore di un certo $\gamma$. I punti classificati correttamente ma troppo vicini al piano vengono definiti \textit{outlier}(\figurename~\ref{outliers}). Ogni penalità è pesata in base alla distanza del punto dall'iperpiano. Il piano che minimizza l'ammontare $l(w,b)$ della penalità è quello poi utilizzato per classificare i punti al di fuori del training set.
 \begin{equation}
 l(w,b)= \dfrac{1}{2} \sum_{j=1}^d w^{(j)^2} + C \sum_{i=1}^n \max[0, 1 - y_i(\sum_{j=1}^d w^{(j)} x_i^{(j)} + b)].
 \end{equation}
@@ -270,7 +271,7 @@ Il primo termine di $l(w,b)$, al fine di normalizzare $\parallel w \parallel ^2$
 \begin{figure}[H]
 \centering
 \includegraphics[scale=.7]{figure/outliers.pdf}
-\caption{In evidenza gli outliers per un insieme di punti bidimensionali. Nel grafico sono presenti anche due errori di classificazione. \label{outliers}}
+\caption{In evidenza gli outlier per un insieme di punti bidimensionali. Nel grafico sono presenti anche due errori di classificazione. \label{outliers}}
 \end{figure}
 \noindent
 Anche in questa situazione il criterio di classificazione è dato dalla
@@ -292,11 +293,17 @@ soggetta ai vincoli
 \end{equation}
 Infine, gli approcci proposti finora possono essere mescolati, come è il caso del problema denominato 1-SVM affrontato nel prossimo paragrafo.
 \section{1-SVM}
-1-SVM è un particolare caso di classificazione mediante macchine a vettori di supporto in cui il numero di classi presenti nel problema è pari a uno. Distribuire punti all'interno di una singola classe non significa costruire una funzione che restituisce l'unica possibile etichetta per ogni possibile valore di input, ma racchiudere all'interno di una porzione di spazio più piccola possibile il maggior numero di punti di un training set, ammettendo alcuni outliers. Ciò permette successivamente di rilevare per esempio dei dati anomali. Formalmente, dato un insieme di oggetti $X = \lbrace x_1, x_2, \cdots, x_n \rbrace$, $X \subseteq \mathbb{R}^d$, e un mapping $\phi: \mathbb{R}^d \rightarrow \mathbb{R}^D$, con $D > d$, il problema di classificazione 1-SVM si riconduce alla ricerca nello spazio $\mathbb{R}^D$ della più piccola (\textit{iper})sfera di raggio $R$ e centro $a$ che racchiuda in sé la maggior parte dei punti appartenenti all'insieme $X$. Ciò equivale a minimizzare $R$ sotto il vincolo che per ogni $x_i \in X$ valga
+1-SVM è un particolare caso di classificazione mediante macchine a vettori di supporto in cui il numero di classi presenti nel problema è pari a uno. Distribuire punti all'interno di una singola classe non significa costruire una funzione che restituisce l'unica possibile etichetta per ogni possibile valore di input, ma racchiudere all'interno di una porzione di spazio più piccola possibile il maggior numero di punti di un training set, ammettendo alcuni outlier, come mostrato in \figurename~\ref{sferasoluzione}. Ciò permette successivamente di rilevare per esempio dei dati anomali. Formalmente, dato un insieme di oggetti $X = \lbrace x_1, x_2, \cdots, x_n \rbrace$, $X \subseteq \mathbb{R}^d$, e un mapping $\phi: \mathbb{R}^d \rightarrow \mathbb{R}^D$, con $D > d$, il problema di classificazione 1-SVM si riconduce alla ricerca nello spazio $\mathbb{R}^D$ della più piccola (\textit{iper})sfera di raggio $R$ e centro $a$ che racchiuda in sé la maggior parte dei punti appartenenti all'insieme $X$. Ciò equivale a minimizzare $R$ sotto il vincolo che per ogni $x_i \in X$ valga
 \begin{equation}\label{sfera}
 \parallel \phi(x_i) - a \parallel^2 \leq R^2 + \xi_i,
 \end{equation}
-dove $\xi_i > 0 \; \forall \; i \in \lbrace 1, \cdots, n \rbrace$  sono variabil slack.\\
+dove $\xi_i > 0 \; \forall \; i \in \lbrace 1, \cdots, n \rbrace$  sono variabil slack.
+\begin{figure}[!b]
+\centering
+\includegraphics[scale=.55]{figure/fuzzification11.pdf}
+\caption{Esempio di sfera soluzione in uno spazio bidimensionale.\label{sferasoluzione}}
+\end{figure}
+\noindent
 Analogamente a quanto visto nel Paragrafo 2.1.4 il problema di minimizzazione viene risolto introducendo una funzione lagrangiana:
 \begin{equation}
 L = R^2 - \sum_{i=1}^n (R^2 + \xi_i - \parallel \phi(x_i) - a \parallel^2) \beta_i - \sum_{i=1}^n \xi_i \mu_i + C \sum_{i=1}^n \xi_i.
@@ -324,7 +331,7 @@ Segue dalla (\refeq{kkt2}) che l'immagine di un punto $x_i$ a cui corrispondono 
 \item Se $0 < \beta_i^* < C$ l'immagine di $x_i$ secondo $\phi$ si trova sulla superficie della sfera e $x_i$ è un vettore di supporto.
 \item Se $\beta_i^*=C$ l'immagine di $x_i$ è mappata al di fuori della sfera e $x_i$ è considerato un outlier.
 \end{itemize}
-Successivamente, in modo simile a come visto per (\refeq{duale}) e per (\refeq{lossduale}), è possibile riscrivere il problema in forma duale di Wolfe\cite{wolfe1961duality}: dal problema vengono eliminate le variabili $R$, $a$ ed $\mu_i$, ottenendo il nuovo obiettivo
+Successivamente, in modo simile a come visto per (\refeq{duale}) e per (\refeq{lossduale}), è possibile riscrivere il problema in forma duale di Wolfe \cite{wolfe1961duality}: dal problema vengono eliminate le variabili $R$, $a$ ed $\mu_i$, ottenendo il nuovo obiettivo
 \begin{equation}
 W = \beta_i\sum_{i=1}^n\phi(x_i)^2 - \sum_{i=1}^n\sum_{j=1}^n\beta_i\beta_j\phi(x_i)\boldsymbol{\cdot}\phi(x_j),
 \end{equation}
@@ -341,7 +348,7 @@ A classificazione avvenuta il raggio $R$ risulta essere uguale alla distanza dal
 R^2(x) = K(x,x) - 2 \sum_{i=1}^n \beta_i K(x_i,x) + \sum_{i=1}^n\sum_{j=1}^n\beta_i\beta_jK(x_i,x_j).
 \end{equation}
 \section{Clustering}
-È possibile utilizzare 1-SVM per la risoluzione di problemi di clustering. Dopo aver applicato il procedimento descritto nel paragrafo precedente a un insieme di punti $a \in A \subseteq \mathbb{R}^d$, si dispone di una sfera che ingloba la maggior parte delle immagini $\phi(a)$ nello spazio delle feature e di una funzione $R^2(\cdot)$ che permette di calcolare il quadrato della distanza di una generica immagine $\phi(x)$ dal centro della sfera che rende così noto anche il raggio $R$. Conoscendo queste informazioni è possibile costruire un metodo per la divisione dei punti $a \in A$ in diversi cluster\cite{ben2001support}. Due punti sono considerati appartenere allo stesso cluster se ogni punto del segmento che li unisce è mappato da $\phi$ all'interno della sfera, cioè risulti $R^2(p) \leq R^2$ per ogni punto $p$ del segmento. Costruendo un grafo avente come nodi tutti i possibili $a \in A$ e tracciando un arco tra il nodo \textit{i} ed  il nodo \textit{j} solo se il segmento che congiunge $a_i$ con $a_j$ è interamente mappato all'interno della sfera, le diverse componenti connesse del grafo corrispondono ai vari cluster in cui $A$ è diviso. Questo metodo di divisione in cluster mediante 1-SVM è definito \textit{support vector clustering}.
+È possibile utilizzare 1-SVM per la risoluzione di problemi di clustering. Dopo aver applicato il procedimento descritto nel paragrafo precedente a un insieme di punti $a \in A \subseteq \mathbb{R}^d$, si dispone di una sfera che ingloba la maggior parte delle immagini $\phi(a)$ nello spazio delle feature e di una funzione $R^2(\cdot)$ che permette di calcolare il quadrato della distanza di una generica immagine $\phi(x)$ dal centro della sfera che rende così noto anche il raggio $R$. Conoscendo queste informazioni è possibile costruire un metodo per la divisione dei punti $a \in A$ in diversi cluster \cite{ben2001support}. Due punti sono considerati appartenere allo stesso cluster se ogni punto del segmento che li unisce è mappato da $\phi$ all'interno della sfera, cioè risulti $R^2(p) \leq R^2$ per ogni punto $p$ del segmento. Costruendo un grafo avente come nodi tutti i possibili $a \in A$ e tracciando un arco tra il nodo \textit{i} ed  il nodo \textit{j} solo se il segmento che congiunge $a_i$ con $a_j$ è interamente mappato all'interno della sfera, le diverse componenti connesse del grafo corrispondono ai vari cluster in cui $A$ è diviso. Questo metodo di divisione in cluster mediante 1-SVM è definito \textit{support vector clustering}.
 \begin{figure}[H]
         \centering%
         \subfigure[Due coppie di punti collegate da un segmento in uno spazio bidimensionale.\label{clustering11}]%
@@ -352,9 +359,9 @@ R^2(x) = K(x,x) - 2 \sum_{i=1}^n \beta_i K(x_i,x) + \sum_{i=1}^n\sum_{j=1}^n\bet
 \end{figure}
 \chapter{Apprendimento di insiemi fuzzy}\label{malchiodi}
 Come visto in precedenza, un insieme fuzzy è definito dalla sua funzione di appartenenza. Un algortimo di apprendimento per insiemi fuzzy di conseguenza deve essere costruito in modo tale che l'elaborazione delle informazioni presenti nel training set conduca alla costruzione di una funzione di appartenenza.
-Sia $X=\lbrace x_1, x_2, \cdots, x_n \rbrace \subset \Omega$ un insieme di punti \textit{d}-dimensionali e $U=\lbrace \mu_1, \mu_2, \cdots, \mu_n \rbrace$ un insieme di gradi di appartenenza a un insieme fuzzy ignoto $A$, tale che $\mu_i$ è il grado di appartenenza di $x_i$ a $A$. Apprendere l'insieme fuzzy $A$ significa costruirne la funzione di appartenenza $\mu_A(\cdot)$ visionando gli insiemi di training $X$ e $U$. Questo problema\cite{malchiodi2013learning} consiste in due fasi: la ricerca dei confini dell'insieme fuzzy e la costruzione della sua funzione di appartenenza.
+Sia $X=\lbrace x_1, x_2, \cdots, x_n \rbrace \subset \Omega$ un insieme di punti \textit{d}-dimensionali e $U=\lbrace \mu_1, \mu_2, \cdots, \mu_n \rbrace$ un insieme di gradi di appartenenza a un insieme fuzzy ignoto $A$, tale che $\mu_i$ è il grado di appartenenza di $x_i$ a $A$. Apprendere l'insieme fuzzy $A$ significa costruirne la funzione di appartenenza $\mu_A(\cdot)$ visionando gli insiemi di training $X$ e $U$. Questo problema \cite{malchiodi2013learning} consiste in due fasi: la ricerca dei confini dell'insieme fuzzy e la costruzione della sua funzione di appartenenza.
 \section{Ricerca dei confini}
-Come visto in precedenza, i confini di un insieme fuzzy non sono una linea di demarcazione netta tra i punti appartenenti all'insieme e quelli che invece non vi appartengono. La ricerca dei confini di un insieme fuzzy $A$ consiste in realtà nella ricerca di un sottoinsieme $X_c \subseteq X$ a cui assegnare la proprietà $x \in X_c \rightarrow \mu_A(x) = 1$. L'insieme $X_c$ così definito prende il nome di \textit{core}. L'insieme fuzzy che ne risulta è quindi composto da un insieme di punti racchiusi all'interno di confini netti e da altri che invece giacciono al di fuori di essi, come è il caso degli outliers dell'algoritmo 1-SVM. Il problema (\refeq{sfera}) di ricerca della più piccola sfera di raggio $R$ e centro $a$ è modificato in modo tale da racchiudere il \textit{core} dell'insieme fuzzy $A$ all'interno della sfera tenendo conto del grado di appartenenza di ciascun punto del training set. Il problema modificato consiste nel minimizzare
+Come visto in precedenza, i confini di un insieme fuzzy non sono una linea di demarcazione netta tra i punti appartenenti all'insieme e quelli che invece non vi appartengono. La ricerca dei confini di un insieme fuzzy $A$ consiste in realtà nella ricerca di un sottoinsieme $X_c \subseteq X$ a cui assegnare la proprietà $x \in X_c \rightarrow \mu_A(x) = 1$. L'insieme $X_c$ così definito prende il nome di \textit{core}. L'insieme fuzzy che ne risulta è quindi composto da un insieme di punti racchiusi all'interno di confini netti e da altri che invece giacciono al di fuori di essi, come è il caso degli outlier dell'algoritmo 1-SVM. Il problema (\refeq{sfera}) di ricerca della più piccola sfera di raggio $R$ e centro $a$ è modificato in modo tale da racchiudere il \textit{core} dell'insieme fuzzy $A$ all'interno della sfera tenendo conto del grado di appartenenza di ciascun punto del training set. Il problema modificato consiste nel minimizzare
 \begin{equation}
 R^2 + C\sum_{i=1}^n (\xi_i + \tau_i)
 \end{equation}
@@ -400,42 +407,96 @@ Infine, analogamente a come visto per (\refeq{r}), il quadrato della distanza da
 \end{equation}
 La superficie della sfera $S$ soluzione del procedimento appena descritto delimita i confini del core dell'insieme fuzzy $A$ nel codominio della funzione $\phi(\cdot)$.
 \section{Costruire la funzione di appartenenza}
-Una volta definito il core dell'insieme $A$ occorre costruirne la funzione di appartenenza $\mu_A(\cdot)$ tenendo conto del fatto che, come tutte le funzioni di appartenenza a un insieme, deve restituire valori nell'intervallo $[0, 1]$. Il procedimento presentato nel Paragrafo 3.1, grazie ai vincoli (\refeq{out}) e (\refeq{in}), rispecchia una certa incertezza nei confini dell'insieme $A$ permettendo al raggio $R$ della sfera $S$ di variare in un intervallo del tipo $[R - \tau , R + \xi]$. Una volta risolto il problema di minimizzazione, $R$ assume però un valore ben preciso, rendendo la superficie della sfera un limite crisp nella separazione tra il core e il resto dell'insieme. Occorre eseguire quindi un processo di \textit{fuzzificazione} dell'insieme $A$. Questo processo è basato sull'ipotesi che il valore restituito dalla funzione di appartenenza $\mu_A(\cdot)$ dipenda esclusivamente dalla distanza $R^2(x)$ dal centro della sfera $S$. Ai punti mappati all'interno della sfera dalla funzione $\phi(\cdot)$ viene assegnato grado di membership pari a 1, mentre ai punti mappati al di fuori della sfera viene assegnato un valore compreso tra uno e zero, decrescente in funzione della distanza $R^2(\cdot)$. Ad esempio, sia $R'(x) = \dfrac{M-R^2(x)}{M-R^2}$, dove $M= \max_x R^2(x)$ con $x \in X$. La funzione $\mu_A(\cdot)$ può essere definita come
+Una volta definito il core dell'insieme $A$ occorre costruirne la funzione di appartenenza $\mu_A(\cdot)$ tenendo conto del fatto che, come tutte le funzioni di appartenenza a un insieme, deve restituire valori nell'intervallo $[0, 1]$. Il procedimento presentato nel Paragrafo 3.1, grazie ai vincoli (\refeq{out}) e (\refeq{in}), rispecchia una certa incertezza nei confini dell'insieme $A$ permettendo al raggio $R$ della sfera $S$ di variare in un intervallo del tipo $[R - \tau , R + \xi]$. Una volta risolto il problema di minimizzazione, $R$ assume però un valore ben preciso, rendendo la superficie della sfera un limite crisp nella separazione tra il core e il resto dell'insieme. Occorre eseguire quindi un processo di \textit{fuzzificazione} dell'insieme $A$. Questo processo è basato sull'ipotesi che il valore restituito dalla funzione di appartenenza $\mu_A(\cdot)$ dipenda esclusivamente dalla distanza $R^2(x)$ dal centro della sfera $S$. Ai punti mappati all'interno della sfera dalla funzione $\phi(\cdot)$ viene assegnato grado di membership pari a 1, mentre ai punti mappati al di fuori della sfera viene assegnato un valore compreso tra uno e zero, decrescente in funzione della distanza $R^2(\cdot)$. Ad esempio, sia 
+\begin{equation}
+\varphi(x) = \dfrac{M-R^2(x)}{M-R^2},
+\end{equation}
+dove $M= \max_x R^2(x)$ con $x \in X$. La funzione $\mu_A(\cdot)$ può essere definita come
 \begin{equation}\label{fuzzyeq}
 \mu_A(x)=
 \begin{cases}
-1 & \text{se } R'(x) \geq 1, \\
-R'(x) & \text{altrimenti}.
+1 & \text{se } R^2(x) \geq R^2, \\
+\varphi(x)& \text{altrimenti}.
 \end{cases}
 \end{equation}
-Con $\mu_A(\cdot)$ definita come sopra, i punti mappati a distanza al massimo $R$ dal centro avranno il grado di appartenenza massimo. Successivamente il grado di appartenenza decresce linearmente fino ad arrivare al grado nullo in corrispondenza della massima distanza $R^2(x)$ calcolata per ogni punto del training set.
-\begin{figure}
-\centering
-\includegraphics[scale=.65]{figure/fuzzification11.pdf}
-\caption{Esempio di sfera soluzione in uno spazio bidimensionale.\label{fuzzification11}}
-\end{figure}
-\begin{figure}[!h]
+Alla funzione $\varphi(\cdot)$ è stato dato il nome di \textit{fuzzificatore}, e può essere una qualsiasi funzione che decresce da uno a zero. Durante lo svolgimento di questo lavoro sono stati presi in considerazione i seguenti fuzzificatori, illustrati in \figurename~\ref{fuzzificatori}:
+\begin{itemize}
+\item Il \textit{Fuzzificatore Crisp}, associa grado di apprtenenza nullo ai punti non appartenenti al core dell'insieme:
+\begin{equation}
+\mu_{\mathrm{crisp}}(x)=
+\begin{cases}
+1 & \text{se } R^2(x) \geq R^2, \\
+0 & \text{altrimenti}.
+\end{cases}
+\end{equation}
+\item Il \textit{Fuzzificatore Lineare}, decresce da uno a zero, linearmente, in base alla distanza $R^2(\cdot)$:
+\begin{equation}
+\mu_{\mathrm{lin}}(x)=
+\begin{cases}
+1 & \text{se } R^2(x) \geq R^2, \\
+\dfrac{M-R^2(x)}{M-R^2} & \text{se } R^2 <  R^2(x) < M, \\
+0 & \text{altrimenti}.
+\end{cases}
+\end{equation}
+\item Il \textit{Fuzzificatore Costante a Tratti}, costruisce una funzione di appartenenza a scalino i cui gradini corrispondono ai quattro quartili ($q_1, q_2, q_3, q_4,$) della distribuzione distanze $R^2(\cdot)$ calcolati empiricamente:
+\begin{equation}
+\mu_{\mathrm{qcost}}(x)=
+\begin{cases}
+1 & \text{se } R^2(x) \geq R^2, \\
+\frac{3}{4} & \text{se } R^2 < R^2(x) < R^2 + q_1, \\
+\frac{1}{2} & \text{se } R^2 < R^2(x) < R^2 + q_2, \\
+\frac{1}{4} & \text{se } R^2 < R^2(x) < R^2 + q_3, \\
+0 & \text{altrimenti}.
+\end{cases}
+\end{equation}
+\item Il \textit{Fuzzificatore Lineare a Tratti}, corrisponde a una linearizzazione del fuzzificatore precedente:
+\begin{equation}
+\mu_{\mathrm{qlin}}(x)=
+\begin{cases}
+1 & \text{se } R^2(x) \geq R^2, \\
+-\dfrac{R^2(x)-R^2}{4q_1} +1 & \text{se } R^2 < R^2(x) < R^2 + q_1, \\
+-\dfrac{R^2(x)-R^2-q_1}{4(q_2-q_1)} +\dfrac{3}{4} & \text{se } R^2 < R^2(x) < R^2 + q_2, \\
+-\dfrac{R^2(x)-R^2-q_2}{4(q_3-q_2)} +\dfrac{1}{2} & \text{se } R^2 < R^2(x) < R^2 + q_3, \\
+-\dfrac{R^2(x)-R^2-q_3}{4(q_4-q_3)} +\dfrac{1}{4} & \text{se } R^2 < R^2(x) < R^2 + q_4, \\
+0 & \text{altrimenti}.
+\end{cases}
+\end{equation}
+\item Il \textit{Fuzzificatore Esponenziale}, costruisce un decadimento esponenziale del grado di appartenenza, dipendente dal parametro $\alpha \in [0,1]$:
+\begin{equation}
+\mu_{\mathrm{exp}}(x)=
+\begin{cases}
+1 & \text{se } R^2(x) \geq R^2, \\
+\mathrm{exp}(\dfrac{\text{ln }\alpha}{q_{\alpha}}(R^2(x)-R^2)) & \text{altrimenti}.
+\end{cases}
+\end{equation}
+Il parametro $\alpha$ permette di legare il fuzzificatore esponenziale al corrispettivo quantile $q$ della distribuzione delle distanze dal centro della sfera. In particolare, si avrà che il fuzzificatore vale esattamente $\alpha$ in corrispondenza di $q$. Informalmente, ciò significa che scegliendo un valore di $\alpha$ più vicino a 0 si ottiene un fuzzificatore più ``schiacciato" sull'asse delle ascisse, mentre scegliendone uno più vicino a 1 si ha un fuzzificatore che tende meno velocemente a zero.
+\end{itemize}
+\begin{figure}[H]
         \centering%
+        \subfigure[Fuzzificazione crisp.\label{fuzzification16}]%
+          {\includegraphics[scale=.4]{figure/fuzzification16.pdf}}\qquad\qquad
        \subfigure[Fuzzificazione lineare.\label{fuzzification12}]%
           {\includegraphics[scale=.4]{figure/fuzzification12.pdf}}\qquad\qquad
            \subfigure[Fuzzificazione costante a tratti, decrescente a ogni quartile.\label{fuzzification13}]%
           {\includegraphics[scale=.4]{figure/fuzzification13.pdf}}\qquad\qquad
        \subfigure[Fuzzificazione lineare a tratti, decrescente a ogni quartile.\label{fuzzification14}]%
           {\includegraphics[scale=.4]{figure/fuzzification14.pdf}}\qquad\qquad
-           \subfigure[Fuzzificazione esponenziale.\label{fuzzification15}]%
-          {\includegraphics[scale=.4]{figure/fuzzification15.pdf}}
-          \caption{Diversi esempi di fuzzificazione per l'insieme in \figurename~\ref{fuzzification11} .}
+           \subfigure[Fuzzificazione esponenziale con $\alpha$ vicino a zero.\label{fuzzification15}]%
+          {\includegraphics[scale=.4]{figure/fuzzification15.pdf}}\qquad\qquad
+           \subfigure[Fuzzificazione esponenziale con $\alpha$ vicino a uno.\label{fuzzification17}]%
+          {\includegraphics[scale=.4]{figure/fuzzification17.pdf}}
+          \caption{Diversi esempi di fuzzificazione\label{fuzzificatori}.}
 \end{figure}
 \section{Costruire la funzione di appartenenza in assenza di membership: esempio con un benchmark}
-Il metodo è applicabile anche in mancanza dell'insieme $U$, cioè quando il grado di membership all'insieme da apprendere è sconosciuto per i punti appartenenti al training set. Una situazione del genere è verificabile in corrispondenza di un training set del tipo definito nel Paragrafo 2.1. Il dataset Iris\cite{fisher1936use}, largamente usato nell'ambito dell'apprendimento automatico, consiste in 150 istanze del fiore Iris classificate in tre diverse specie: \textit{setosa}, \textit{virginica} e \textit{versicolor}. In base a quattro differenti feature, le tre specie si posizionano nello spazio in modo che la classe setosa sia linearmente separabile dalle altre due che invece presentano una parziale sovrapposizione. La \figurename~\ref{datasetiris} mostra il dataset nella sua rappresentazione bidimensionale dopo aver applicato la tecnica PCA\cite{abdi2010principal} di riduzione della dimensionalità.
-\begin{figure}[H]
+\chaptermark{Esempio con un benchmark}
+Il metodo è applicabile anche in mancanza dell'insieme $U$, cioè quando il grado di membership all'insieme da apprendere è sconosciuto per i punti appartenenti al training set. Una situazione del genere è verificabile in corrispondenza di un training set del tipo definito nel Paragrafo 2.1. Il dataset Iris \cite{fisher1936use}, largamente usato nell'ambito dell'apprendimento automatico, consiste in 150 istanze del fiore Iris classificate in tre diverse specie: \textit{setosa}, \textit{virginica} e \textit{versicolor}. In base a quattro differenti feature, le tre specie si posizionano nello spazio in modo che la classe setosa sia linearmente separabile dalle altre due che invece presentano una parziale sovrapposizione. La \figurename~\ref{datasetiris} mostra il dataset nella sua rappresentazione bidimensionale dopo aver applicato la tecnica PCA \cite{abdi2010principal} di riduzione della dimensionalità.
+\begin{figure}[!bt]
 \centering
 \includegraphics[scale=0.6]{figure/datasetiris.pdf}
 \caption{Dataset Iris proiettato nelle sue due componenti principali. \label{datasetiris}}
 \end{figure}
-Supponendo di voler apprendere per una delle classi, ad esempio setosa, il corrispondente insieme fuzzy, il metodo di apprendimento appena proposto può comunque essere utilizzato costruendo l'insieme $U$ in modo tale che $\mu_i = 1$ se $x_i$ appartiene alla classe setosa, $x_i = 0$ altrimenti. Lo stesso identico ragionamento può essere applicato per le restanti classi. Ne risultano così tre funzioni di appartenenza $\mu_{setosa}$, $\mu_{virginica}$ e $\mu_{versicolor}$ apprese separatamente. Le Figure 3.3-3.5 mostrano il grafico di queste tre funzioni di appartenenza ottenute utilizzando un kernel gaussiano di parametro $\sigma$ e fissando il parametro di tradeoff $C$.
-Si noti che, siccome le classi virginica e versicolor sono sovrapposte in parte e il criterio di fuzzificazione è basato sulla posizione dei punti nello spazio, i due insiemi fuzzy virginica e versicolor hanno un intersezione non vuota, come notato in \figurename~\ref{fuzzyvirginica} e in \figurename~\ref{fuzzyversicolor}. Questo significa che per alcuni punti \textit{di confine} $x_c$ risulteranno $\mu_{virginica}(x_c) > 0$ e $\mu_{versicolor}(x_c) > 0$.  Ciò non accade per l'insieme setosa che risulta disgiunto dagli altri due. Utilizzando come criterio di classificazione di un punto il grado di appartenenza maggiore al corrispettivo insieme fuzzy ne risulta un'accuratezza di previsione su punti al di fuori del training set pari a circa il 95\%.
-\begin{figure}[!h]
+Supponendo di voler apprendere per una delle classi, ad esempio setosa, il corrispondente insieme fuzzy, il metodo di apprendimento appena proposto può comunque essere utilizzato costruendo l'insieme $U$ in modo tale che $\mu_i = 1$ se $x_i$ appartiene alla classe setosa, $x_i = 0$ altrimenti. Lo stesso identico ragionamento può essere applicato per le restanti classi. Ne risultano così tre funzioni di appartenenza $\mu_{setosa}$, $\mu_{virginica}$ e $\mu_{versicolor}$ apprese separatamente. Le Figure 3.3-3.5 mostrano il grafico di queste tre funzioni di appartenenza ottenute utilizzando un kernel gaussiano di parametro $\sigma$ e fissando il parametro di tradeoff $C$. Si noti che, siccome le classi virginica e versicolor sono sovrapposte in parte e il criterio di fuzzificazione è basato sulla posizione dei punti nello spazio, i due insiemi fuzzy virginica e versicolor hanno un intersezione non vuota, come notato in \figurename~\ref{fuzzyvirginica} e in \figurename~\ref{fuzzyversicolor}. Questo significa che per alcuni punti \textit{di confine} $x_c$ risulteranno $\mu_{virginica}(x_c) > 0$ e $\mu_{versicolor}(x_c) > 0$.  Ciò non accade per l'insieme setosa che risulta disgiunto dagli altri due. Utilizzando come criterio di classificazione di un punto il grado di appartenenza maggiore al corrispettivo insieme fuzzy ne risulta un'accuratezza di previsione su punti al di fuori del training set pari a circa il 95\%.
+\begin{figure}[!b]
         \centering%
         \subfigure
           {\includegraphics[scale=.5]{figure/setosamap.pdf}}\qquad\qquad
@@ -443,7 +504,7 @@ Si noti che, siccome le classi virginica e versicolor sono sovrapposte in parte 
           {\includegraphics[scale=.5]{figure/setosaheat.pdf}}
           \caption{Contorni e mappa di calore dell'insieme fuzzy setosa. Durante l'apprendimento è stato usato il parametro $C=10$ e un kernel gaussiano di parametro $\sigma=0.5$.}
 \end{figure}
-\begin{figure}[!h]
+\begin{figure}[!b]
         \centering%
         \subfigure
           {\includegraphics[scale=.5]{figure/virginicamap.pdf}}\qquad\qquad
@@ -451,7 +512,7 @@ Si noti che, siccome le classi virginica e versicolor sono sovrapposte in parte 
           {\includegraphics[scale=.5]{figure/virginicaheat.pdf}}
           \caption{Contorni e mappa di calore dell'insieme fuzzy virginica. Durante l'apprendimento è stato usato il parametro $C=10$ e un kernel gaussiano di parametro $\sigma=0.5$.\label{fuzzyvirginica}}
 \end{figure}
-\begin{figure}[!h]
+\begin{figure}[!b]
         \centering%
         \subfigure
           {\includegraphics[scale=.5]{figure/versicolormap.pdf}}\qquad\qquad
@@ -460,7 +521,8 @@ Si noti che, siccome le classi virginica e versicolor sono sovrapposte in parte 
           \caption{Contorni e mappa di calore dell'insieme fuzzy versicolor. Durante l'apprendimento è stato usato il parametro $C=100$ e un kernel gaussiano di parametro $\sigma=0.225$.\label{fuzzyversicolor}}
 \end{figure}
 \chapter{Apprendimento simultaneo di insiemi fuzzy}
-Il problema dell'apprendimento simultaneo di fuzzy set\cite{WIRN2018} consiste nella costruzione di un insieme $\lbrace \mu_1(\cdot), \cdots, \mu_m(\cdot) \rbrace$ di \textit{m} funzioni di appartenenza riguardanti altrettanti insiemi fuzzy $\lbrace C_1, \cdots, C_m \rbrace$. Dato un insieme di training $\lbrace x_1, \cdots, x_n \rbrace$ dove $ x_i \in X \subseteq \Omega$, $\lbrace C_1, \cdots, C_m \rbrace$ è il risultato dell'algoritmo di support vector clustering applicato all'insieme $X$ e le funzioni $\lbrace \mu_1(\cdot), \cdots, \mu_m(\cdot) \rbrace$ sono il risultato dell'algoritmo di apprendimento illustrato nel Capitolo 4 applicato a ogni $C_j$. Il problema si compone di due livelli: individuare l'insieme $\lbrace C_1, \cdots, C_m \rbrace$ e costruire le funzioni $\lbrace \mu_1(\cdot), \cdots, \mu_m(\cdot) \rbrace$.
+\chaptermark{Apprendimento simultaneo}
+Il problema dell'apprendimento simultaneo di fuzzy set \cite{WIRN2018} consiste nella costruzione di un insieme $\lbrace \mu_1(\cdot), \cdots, \mu_m(\cdot) \rbrace$ di \textit{m} funzioni di appartenenza riguardanti altrettanti insiemi fuzzy $\lbrace C_1, \cdots, C_m \rbrace$. Dato un insieme di training $\lbrace x_1, \cdots, x_n \rbrace$ dove $ x_i \in X \subseteq \Omega$, $\lbrace C_1, \cdots, C_m \rbrace$ è il risultato dell'algoritmo di support vector clustering applicato all'insieme $X$ e le funzioni $\lbrace \mu_1(\cdot), \cdots, \mu_m(\cdot) \rbrace$ sono il risultato dell'algoritmo di apprendimento illustrato nel Capitolo 4 applicato a ogni $C_j$. Il problema si compone di due livelli: individuare l'insieme $\lbrace C_1, \cdots, C_m \rbrace$ e costruire le funzioni $\lbrace \mu_1(\cdot), \cdots, \mu_m(\cdot) \rbrace$.
 \section{Individuazione degli insiemi fuzzy}
 Il primo passo nell'individuazione dei diversi insiemi fuzzy $C_j$ è quello di costruire il problema di ottimizzazione alla base di 1-SVM per l'insieme $X$, che nella sua forma duale di Wolfe consiste nel minimizzare
 \begin{equation}\label{wolfegurobi}
@@ -544,7 +606,7 @@ Inoltre è possibile selezionare alcuni parametri opzionali di esecuzione che, s
 \end{algorithm}
 \noindent
 La divisione dell'insieme $X$ in training set (80\%), validation set (10\%) e test set (10\%), viene eseguita utilizzando una permutazione casuale dei dati, diversa per ogni iterazione. La scelta di un seme per l'inizializzazione del generatore di permutazioni casuali permette la ripetizione identica di un esperimento.
-Utilizzando la procedura di apprendimento simultaneo nella modalità supervisionata, ad ogni funzione di appartenenza $\mu_j(\cdot)$ viene assegnata una tra le possibili etichette contenute in $Y$. Da qui in avanti si farà riferimento all'insieme $\lbrace y_1, \cdots, y_m \rbrace$, dove la generica etichetta $y_j$ è quella assegnata alla funzione $\mu_j(\cdot)$ durante l'esecuzione supervisionata della procedura. Nello specifico, ad ogni funzione di appartenenza $\mu_j(\cdot)$ viene assegnata l'etichetta più frequente tra quelle dei punti contenute nel corrispondente cluster $C_j$.
+Utilizzando la procedura di apprendimento simultaneo nella modalità supervisionata, a ogni funzione di appartenenza $\mu_j(\cdot)$ viene assegnata una tra le possibili etichette contenute in $Y$. Da qui in avanti si farà riferimento all'insieme $\lbrace y_1, \cdots, y_m \rbrace$, dove la generica etichetta $y_j$ è quella assegnata alla funzione $\mu_j(\cdot)$ durante l'esecuzione supervisionata della procedura. Nello specifico, a ogni funzione di appartenenza $\mu_j(\cdot)$ viene assegnata l'etichetta più frequente tra quelle dei punti contenute nel corrispondente cluster $C_j$.
 A ogni punto del validation set vengono applicate le diverse funzioni $\mu_j(\cdot)$ e a ogni punto viene assegnata l'etichetta della funzione che restituisce il grado di appartenenza più alto. L'accuratezza $a$ di ogni diverso modello $M_{C,\sigma}$ è calcolata come il rapporto tra il numero di etichette classificate correttamente e il numero di etichette totali presenti nel validation set:
 \begin{equation}
 a = \dfrac{\text{\# etichette corrette}}{\text{\# etichette totali}}.
@@ -554,12 +616,11 @@ Quando si sceglie di non forzare il numero di cluster al numero di etichette dif
 \begin{equation}
 C_l = \bigcup_{y_i = l} C_i.
 \end{equation}
-Quando al contrario si sceglie di forzare l'uguaglianza tra il numero di cluster e il numero di etichette differenti, vengono mantenuti i primi $k$ cluster per grandezza e si scartano gli altri, che non vengono trasformati in insiemi fuzzy. Qualora il numero $m$ di cluster individuati è tale che $m<k$, il modello non viene considerato nella ricerca di quello ottimale. Analogamente, scegliere di forzare le differenti etichette ad essere rappresentate da almeno un insieme fuzzy fa in modo che i modelli tali per cui esiste almeno un'etichetta $l \in Y$ non presente nell'insieme $\lbrace y_1, \cdots, y_m \rbrace$ non vengano considerati.\\
-Va specificato che per implementare la soluzione del problema di ottimizzazione definito da (\refeq{wolfegurobi}) è stata utilizzata la libreria Gurobi Optimizer\cite{optimization2014inc}. Il risultato di questa ottimizzazione è un vettore $\lbrace \beta_1^*, \cdots, \beta_n^* \rbrace$ i cui elementi non sono mai uguali né a zero né a $C$, sebbene il numero di vettori di supporto sia strettamente minore del numero di dati a disposizione. Al fine di ottenere una soluzione consona è stata definita una soglia $\varepsilon = 10^{-4}$ tale che se $0 < \beta_i < 0 + \varepsilon$, allora $\beta_i$ viene approssimato a zero. Analogamente se $C - \varepsilon < \beta_i < C$, allora $\beta_i$ viene approssimato a $C$. I vettori di supporto risultanti dal problema di minimizzazione risultano quindi essere quegli $x_i$ la cui corrispondente $\beta_i$ è tale  che $0 + \varepsilon < \beta_i < C -\varepsilon$.
+Quando al contrario si sceglie di forzare l'uguaglianza tra il numero di cluster e il numero di etichette differenti, vengono mantenuti i primi $k$ cluster per grandezza e si scartano gli altri, che non vengono trasformati in insiemi fuzzy. Qualora il numero $m$ di cluster individuati è tale che $m<k$, il modello non viene considerato nella ricerca di quello ottimale. Analogamente, scegliere di forzare le differenti etichette a essere rappresentate da almeno un insieme fuzzy fa in modo che i modelli tali per cui esiste almeno un'etichetta $l \in Y$ non presente nell'insieme $\lbrace y_1, \cdots, y_m \rbrace$ non vengano considerati.\\
+Va specificato che per implementare la soluzione del problema di ottimizzazione definito da (\refeq{wolfegurobi}) è stata utilizzata la libreria Gurobi Optimizer \cite{optimization2014inc}. Il risultato di questa ottimizzazione è un vettore $\lbrace \beta_1^*, \cdots, \beta_n^* \rbrace$ i cui elementi non sono mai uguali né a zero né a $C$, sebbene il numero di vettori di supporto sia strettamente minore del numero di dati a disposizione. Al fine di ottenere una soluzione consona è stata definita una soglia $\varepsilon = 10^{-4}$ tale che se $0 < \beta_i < 0 + \varepsilon$, allora $\beta_i$ viene approssimato a zero. Analogamente se $C - \varepsilon < \beta_i < C$, allora $\beta_i$ viene approssimato a $C$. I vettori di supporto risultanti dal problema di minimizzazione risultano quindi essere quegli $x_i$ la cui corrispondente $\beta_i$ è tale  che $0 + \varepsilon < \beta_i < C -\varepsilon$.
 \subsection{Risultati}
-Di seguito vengono mostrati i risultati sperimentali della procedura di apprendimento simultaneo descritta nei paragrafi precedenti. Nei primi esperimenti sono stati analizzati iperparametri in un insieme delle potenze di 10: Da $10^{-2}$ a $10^2$. Successivamente, in base ai risultati ottenuti, il range è stato raffinato. In ogni esperimento è stato utilizzato il dataset Iris mostrato nel Capitolo 3.\ unitamente a un numero di ripetizioni $I=10$. Nelle Tabelle \ref{wirn}-\ref{pcm}, che riassumono i risultati ottenuti, la colonna Dim. indica il numero di componenti principali utilizzate durante l'esperimento. Le colonne Avg.\ e StDev.\ indicano rispetitvamente la media e la deviazione standard dell'accuratezza calcolata sull'insieme di training e sull'insieme di test.\\
-La Tabella \ref{wirn} contiene i risultati sperimentali del confronto della procedura di apprendimento simultaneo tramite support vector clustering con l'algoritmo \textit{fuzzy c-means}\cite{bezdek1984fcm}. Questo algoritmo divide il dataset in un numero prefissato $c$ di insiemi fuzzy. Per questo esperimento l'algoritmo di apprendimento simultaneo è stato quindi forzato a ottenere $c=3$ cluster, uno per ogni diversa etichetta presente nel dataset Iris. In \figurename~\ref{fwirn} è mostrato il contorno, rappresentato come curve di livello sul grado di membership, degli insiemi fuzzy ottenuti secondo questi criteri dal metodo di apprendimento simultaneo. I risultati in Tabella \ref{wirn} sono leggermente a favore dell'algoritmo proposto.
-\begin{table}[!tb]
+Di seguito vengono mostrati i risultati sperimentali della procedura di apprendimento simultaneo descritta nei paragrafi precedenti. Nei primi esperimenti sono stati analizzati iperparametri in un insieme delle potenze di 10: Da $10^{-2}$ a $10^2$. Successivamente, in base ai risultati ottenuti, il range è stato raffinato. In ogni esperimento è stato utilizzato il dataset Iris mostrato nel Capitolo 3.\ unitamente a un numero di ripetizioni $I=10$. Nelle Tabelle \ref{wirn}-\ref{pcm}, che riassumono i risultati ottenuti, la colonna Dim. indica il numero di componenti principali utilizzate durante l'esperimento. Le colonne Avg.\ e StDev.\ indicano rispetitvamente la media e la deviazione standard dell'accuratezza calcolata sull'insieme di training e sull'insieme di test.\\\\La Tabella \ref{wirn}
+\begin{table}[!t]
 \caption{Risultato di 10 iterazioni della procedura di apprendimento simultaneo (SVC) a confronto con l'algoritmo fuzzy c-means (FCM)\label{wirn}.}
 \begin{tabular}{|c|c|c|c|c|c|c|c|c|}
 \hline
@@ -575,7 +636,7 @@ Dim. & Avg. & StDev. & Media & StDev. & Avg. & StDev. & Media & StDev. \\
 \hline
 \end{tabular}
 \end{table}
-\begin{figure}[!tb]
+\begin{figure}[!t]
         \centering%
         \subfigure[setosa]%
           {\includegraphics[scale=.35]{figure/wirnsetosa.pdf}}\qquad\qquad
@@ -583,9 +644,11 @@ Dim. & Avg. & StDev. & Media & StDev. & Avg. & StDev. & Media & StDev. \\
           {\includegraphics[scale=.35]{figure/wirnversicolor.pdf}}\qquad\qquad
            \subfigure[virginica]%
           {\includegraphics[scale=.35]{figure/wirnvirginica.pdf}}
-          \caption{Contorno degli insiemi fuzzy setosa, versicolor e virginica\label{fwirn}.}
+          \caption{Contorno degli insiemi fuzzy setosa, versicolor e virginica. Durante questo esperimento sono stati usati gradidi membership binari e un fuzzificatore lineare.\label{fwirn}}
 \end{figure}
-Nella Tabella \ref{blmu} è mostrato il confronto tra l'utilizzo di membership binarie e membership linearmente decrescenti durante il clustering di secondo livello. I risultati ottenuti sono a favore delle prime. Come precedentemente notato, in presenza di $\mu_i = 0$ (\refeq{out}) tende a escludere dal core dell'insieme fuzzy il punto $x_i$. Ciò non avviene in presenza di $\mu_i > 0$. In presenza di cluster sovrapposti, l'utilizzo di gradi di appartenenza $\mu$ di tipo binario separa più facilmente i punti appartenenti a classi differenti, rendendo migliore il risultato della successiva classificazione. Va notato come l'accuratezza media calcolata nelle quattro dimensioni con $\mu$ lineari risulti sproporzionata rispetto alle altre e presenti una più alta deviazione standard. Non forzando il numero di cluster a essere uguale a quello delle etichette, da un lato si ottengono insiemi fuzzy più precisi, definiti come l'unione di insiemi più piccoli, dall'altro è possibile incorrere in modelli composti da un numero di  insiemi fuzzy minori del numero delle diverse etichette. La conseguenza di questo evento è un calo nella precisione di classificazione. Questo spiega il valore medio fuori scala e la più alta deviazione standard presenti nell'ultima riga della Tabella \ref{blmu}. Le Figure \ref{blsetosa}-\ref{blvirg} mostrano un esempio dei controni degli insiemi fuzzy ottenuti durante questa sperimentazione.
+contiene i risultati sperimentali del confronto della procedura di apprendimento simultaneo tramite support vector clustering con l'algoritmo \textit{fuzzy c-means} \cite{bezdek1984fcm}. Questo algoritmo divide il dataset in un numero prefissato $c$ di insiemi fuzzy. Per questo esperimento l'algoritmo di apprendimento simultaneo è stato quindi forzato a ottenere $c=3$ cluster, uno per ogni diversa etichetta presente nel dataset Iris. In \figurename~\ref{fwirn} è mostrato il contorno, rappresentato come curve di livello sul grado di membership, degli insiemi fuzzy ottenuti secondo questi criteri dal metodo di apprendimento simultaneo. I risultati in Tabella \ref{wirn} sono leggermente a favore dell'algoritmo proposto.\\\\
+\noindent
+Nella Tabella \ref{blmu} è mostrato il confronto tra l'utilizzo di membership binarie e membership linearmente decrescenti durante il clustering di secondo livello. I risultati ottenuti sono a favore delle prime. Come precedentemente notato, in presenza di $\mu_i = 0$ (\refeq{out}) tende a escludere dal core dell'insieme fuzzy il punto $x_i$. Ciò non avviene in presenza di $\mu_i > 0$. In presenza di cluster sovrapposti, l'utilizzo di gradi di appartenenza $\mu$ di tipo binario separa più facilmente i punti appartenenti a classi differenti, rendendo migliore il risultato della successiva classificazione. Va notato come l'accuratezza media calcolata nelle quattro dimensioni con $\mu$ lineari risulti sproporzionata rispetto alle altre e presenti una più alta deviazione standard. Non forzando il numero di cluster a essere uguale a quello delle etichette, da un lato si ottengono insiemi fuzzy più precisi, definiti come l'unione di insiemi più piccoli (Figure \ref{versbmu}-\ref{virbmu}), dall'altro è possibile incorrere in modelli composti da un numero di  insiemi fuzzy minori del numero delle diverse etichette. La conseguenza di questo evento è un calo nella precisione di classificazione. Questo spiega il valore medio fuori scala e la più alta deviazione standard presenti nell'ultima riga della Tabella \ref{blmu}. La \figurename~\ref{bmu} mostra un esempio dei contorni degli insiemi fuzzy ottenuti durante questa sperimentazione.\\\\Le Tabelle \ref{df} e \ref{ef}
 \begin{table}[!tb]
 \caption{Risultato di 10 iterazioni della procedura di apprendimento simultaneo utilizzando $\mu$ di tipo binario e lineare. \label{blmu}.}
 \begin{tabular}{|c|c|c|c|c|c|c|c|c|}
@@ -603,46 +666,19 @@ Dim. & Avg. & StDev. & Media & StDev. & Avg. & StDev. & Media & StDev. \\
 \end{tabular}
 \end{table}
 \begin{figure}[!tb]
-\centering
-\includegraphics[scale=0.5]{figure/blset1.pdf}
-\caption{Insieme fuzzy setosa appreso tramite $\mu$ binarie.\label{blsetosa}}
-\end{figure}
-\begin{figure}[!bt]
         \centering%
-        \subfigure%
-          {\includegraphics[scale=.3, angle=90]{figure/blvers1.png}}\qquad\qquad
-       \subfigure%
-          {\includegraphics[scale=.3, angle=90]{figure/blvers2.png}}\qquad\qquad
-           \subfigure%
-          {\includegraphics[scale=.3, angle= 90]{figure/blvers3.png}}
-          \caption{Insieme fuzzy versicolor appreso tramite $\mu$ binarie. L'insieme risulta essere l'unione dei tre insiemi i cui contorni sono mostrati in figura.\label{blvers}.}
+        \subfigure[setosa]%
+          {\includegraphics[scale=.35, angle=90]{figure/setosabmu.pdf}}\qquad\qquad
+       \subfigure[versicolor\label{versbmu}]%
+          {\includegraphics[scale=.35, angle=90]{figure/versicolorbmu.pdf}}\qquad\qquad
+           \subfigure[virginica\label{virbmu}]%
+          {\includegraphics[scale=.35, angle= 90]{figure/virginicabmu.pdf}}
+          \caption{Contorno dei tre insiemi fuzzy setosa, versicolor e virginica appresi mediante valori di membership $\mu$ di tipo binario. Gli insiemi versicolor (\ref{versbmu}) e virginica (\ref{virbmu}) sono individuati dall'unione di più insiemi fuzzy.\label{bmu}}
 \end{figure}
-\begin{figure}[!tb]
-        \centering%
-        \subfigure%
-          {\includegraphics[scale=.3, angle=90]{figure/blvirg1.png}}\qquad\qquad
-       \subfigure%
-          {\includegraphics[scale=.3, angle=90]{figure/blvirg2.png}}\qquad\qquad
-           \subfigure%
-          {\includegraphics[scale=.3, angle=90]{figure/blvirg3.png}}
-          \caption{Insieme fuzzy virginica appreso tramite $\mu$ binarie. L'insieme risulta essere l'unione dei tre insiemi i cui contorni sono mostrati in figura.\label{blvirg}.}
-\end{figure}Le Tabelle \ref{df} e \ref{ef} contengono i risultati ottenuti variando il metodo di fuzzificazione tra quelli presenti in \figurename~\ref{diff}.
-\begin{figure}[!tb]
-        \centering%
-        \subfigure[Fuzzificazione crisp.\label{fuzzification21}]%
-          {\includegraphics[scale=.4]{figure/fuzzification21.pdf}}\qquad\qquad
-       \subfigure[Fuzzificazione lineare.\label{fuzzification22}]%
-          {\includegraphics[scale=.4]{figure/fuzzification22.pdf}}\qquad\qquad
-           \subfigure[Fuzzificazione costante a tratti, decrescente a ogni quartile (QuantCost.).\label{fuzzification23}]%
-          {\includegraphics[scale=.4]{figure/fuzzification23.pdf}}\qquad\qquad
-       \subfigure[Fuzzificazione lineare a tratti, decrescente a ogni quartile (QuantLin.).\label{fuzzification24}]%
-          {\includegraphics[scale=.4]{figure/fuzzification24.pdf}}\qquad\qquad
-           \subfigure[Fuzzificazione esponenziale. Inserire descrizione parametro alfa.\label{fuzzification25}]%
-          {\includegraphics[scale=.4]{figure/fuzzification25.pdf}}
-          \caption{Metodi di fuzzificazione.\label{diff}}
-\end{figure}
-\begin{table}[!tb]
-\caption{Risultato di 10 iterazioni della procedura di apprendimento simultaneo utilizzando diverse funzioni decrescenti durante il processo di fuzzificazione. \label{df}.}
+\noindent
+contengono i risultati ottenuti variando il metodo di fuzzificazione tra quelli precedentemente introdotti. I risultati peggiori si hanno in corrispondenza delle fuzzificazioni crisp e costante a tratti. Queste funzioni infatti presentano dei confini ben precisi di passaggio da un grado di membership a un altro e mal si adattano alla rappresentazione di un insieme fuzzy. Diversamente, le funzioni che decrescono in maniera continua ottengono buoni risultati. In \figurename~\ref{crispset} sono visualizzati i contorni degli insiemi fuzzy setosa, versicolor e virginica appresi mediante una fuzzificazione di tipo crisp. Da notare come, in questo caso, i confini degli insiemi risultino più evidenti che nelle altre figure proposte. In \figurename~\ref{qc} è possibile vedere la mappa di calore degli stessi insiemi fuzzy, appresi con fuzzificazione costante a tratti. Le diverse tonalità di colore che demarcano il diminuire del grado di appartenenza, anche in questo caso, si differenziano nettamente. 
+\begin{table}[H]
+\caption{Risultato di 10 iterazioni della procedura di apprendimento simultaneo utilizzando diversi fuzzificatori.\label{df}}
 \begin{tabular}{|c|c|c|c|c|c|c|c|c|}
 \hline
 & \multicolumn{4}{|c|}{Crisp} & \multicolumn{4}{|c|}{QuantCost.}\\
@@ -668,8 +704,30 @@ Dim. & Avg. & StDev. & Media & StDev. & Avg. & StDev. & Media & StDev. \\
 \hline
 \end{tabular}
 \end{table}
-\begin{table}[!tb]
-\caption{Risultato di 10 iterazioni della procedura di apprendimento simultaneo utilizzando la funzione esponenziale di parametro $\alpha$ \label{ef}.}
+\begin{figure}[H]
+        \centering%
+        \subfigure%
+          {\includegraphics[scale=.35, angle=90]{figure/setosacrisp.pdf}}\qquad\qquad
+       \subfigure%
+          {\includegraphics[scale=.35, angle=90]{figure/versicolorcrisp.pdf}}\qquad\qquad
+           \subfigure%
+          {\includegraphics[scale=.35, angle=90]{figure/virginicacrisp.pdf}}
+          \caption{Contorno dei tre insiemi fuzzy setosa, versicolor e virginica appresi mediante una fuzzificazione di tipo crisp.\label{crispset}}
+\end{figure}
+\begin{figure}[H]
+        \centering%
+        \subfigure[setosa]%
+          {\includegraphics[scale=.3]{figure/qc1.png}}\qquad\qquad
+       \subfigure[versicolor]%
+          {\includegraphics[scale=.3]{figure/qc2.png}}\qquad\qquad
+           \subfigure[virginica]%
+          {\includegraphics[scale=.3]{figure/qc3.png}}
+          \caption{Mappa di calore dei tre insiemi fuzzy setosa, versicolor e virginica con l'utilizzo di una fuzzificazione costante a tratti.\label{qc}}
+\end{figure}
+\noindent
+Come esposto in precedenza, valori di $\alpha$ prossimi allo zero fanno sì che la funzione del  fuzzificatore esponenziale risulti schiacciata sull'asse delle ascisse, mentre con valori più vicini a uno la velocità con cui la funzione tende allo zero diminuisce. Sostanzialmente, al diminuire di $\alpha$ il fuzzificatore esponenziale tende sempre di più ad assumere la forma del fuzzificatore crisp e, allo stesso modo, i contorni degli insiemi fuzzy ottenuti dal processo di apprendimento tendono a farsi sempre più netti. Questo fenomeno è mostrato in \figurename~\ref{exp}, dove sono messi a confronto i contorni dell'insieme setosa appresi mediante diversi esperimenti in cui è stato variato il parametro $\alpha$ del fuzzificatore esponenziale. In \figurename~\ref{expsetosa8}, in corrispondenza di $\alpha=0.8$, il grado di appartenenza dei punti appena al di fuori del core è pari a $0.9$. Questo valore diminuisce per $\alpha=0.6$ a $0.7$ (\figurename~\ref{expsetosa6}) e succesivamente a $0.5$ per $\alpha=0.4$ (\figurename~\ref{expsetosa6}). Infine, in \figurename~\ref{expsetosa2} sono mostrati i contorni dell'insieme setosa appreso con un fuzzificatore esponenziale di parametro $\alpha=0.2$, dove oltre il confine del core dell'insieme fuzzy il grado di appartenenza risulta essere pari a $0.3$, segno del continuo delineamento dei contorni dell'insieme.
+\begin{table}[H]
+\caption{Risultato di 10 iterazioni della procedura di apprendimento simultaneo utilizzando il fuzzificatore esponenziale con un diverso parametro $\alpha$ \label{ef}.}
 \begin{tabular}{|c|c|c|c|c|c|c|c|c|}
 \hline
 & \multicolumn{4}{|c|}{$\alpha=0.2$} & \multicolumn{4}{|c|}{$\alpha=0.4$.}\\
@@ -694,29 +752,22 @@ Dim. & Avg. & StDev. & Media & StDev. & Avg. & StDev. & Media & StDev. \\
 4 & 0.63 & 0.10 & 0.60 & 0.14 & 0.60 & 0.14 & 0.52 & 0.19 \\
 \hline
 \end{tabular}
-\end{table}I risultati peggiori si hanno in corrispondenza delle fuzzificazioni crisp e costante a tratti. Queste funzioni infatti presentano dei confini ben precisi di passaggio da un grado di membership a un altro e mal si adattano alla rappresentazione di un insieme fuzzy. Diversamente, le funzioni che decrescono in maniera continua ottengono buoni risultati. In \figurename~\ref{crispset} sono visualizzati i contorni degli insiemi fuzzy setosa, versicolor e virginica appresi mediante una fuzzificazione di tipo crisp. Da notare come, in questo caso, i confini degli insiemi risultino più evidenti che nelle altre figure proposte. In \figurename~\ref{qc} è possibile vedere la mappa di calore degli stessi insiemi fuzzy, appresi con fuzzificazione costante a tratti. Le diverse tonalità di colore che demarcano il diminuire del grado di appartenenza, anche in questo caso, si differenziano nettamente. 
-\begin{figure}[!tb]
+\end{table}
+\begin{figure}[H]
         \centering%
-        \subfigure%
-          {\includegraphics[scale=.3, angle=90]{figure/crispset1.png}}\qquad\qquad
-       \subfigure%
-          {\includegraphics[scale=.3, angle=90]{figure/crispset2.png}}\qquad\qquad
-           \subfigure%
-          {\includegraphics[scale=.3, angle=90]{figure/crispset3.png}}
-          \caption{Risultato dell'apprendimento simultaneo con funzione di fuzzificazione crisp\label{crispset}.}
+        \subfigure[$\alpha = 0.8$.\label{expsetosa8}]%
+          {\includegraphics[scale=.4, angle=90]{figure/expsetosa8.pdf}}\qquad\qquad
+       \subfigure[$\alpha = 0.6$.\label{expsetosa6}]%
+          {\includegraphics[scale=.4, angle=90]{figure/expsetosa6.pdf}}\qquad\qquad
+           \subfigure[$\alpha = 0.4.$\label{expsetosa4}]%
+          {\includegraphics[scale=.4, angle=90]{figure/expsetosa4.pdf}}\qquad\qquad
+           \subfigure[$\alpha = 0.2.$\label{expsetosa2}]%
+          {\includegraphics[scale=.4, angle=90]{figure/expsetosa2.pdf}}
+          \caption{Contorno dell'insieme fuzzy setosa ottenuto mediante fuzzificatori esponenziali di diverso parametro $\alpha$.\label{exp}}
 \end{figure}
-\begin{figure}[!tb]
-        \centering%
-        \subfigure%
-          {\includegraphics[scale=.3]{figure/qc1.png}}\qquad\qquad
-       \subfigure%
-          {\includegraphics[scale=.3]{figure/qc2.png}}\qquad\qquad
-           \subfigure%
-          {\includegraphics[scale=.3]{figure/qc3.png}}
-          \caption{Mappa di calore degli insiemi fuzzy  setosa, versicolor e virginica appresi mediante una fuzzificazione di tipo costante a tratti\label{qc}.}
-\end{figure}
-Infine, in Tabella \ref{pcm} sono presentati i risultati ottenuti applicando l'algoritmo di clustering \textit{possibilistic c-means}\cite{filippone2010applying} in sostituzione a 1-SVM. Nel caso possibilistico i gradi di appartenenza non dipendono dalla distanza ma sono un'interpretazione probabilistica e possibilistica.
-\begin{table}[!tb]
+\noindent
+Infine, in Tabella \ref{pcm} sono presentati i risultati ottenuti applicando l'algoritmo di clustering \textit{possibilistic c-means} \cite{filippone2010applying} in sostituzione a 1-SVM. Nel caso possibilistico i gradi di appartenenza non dipendono dalla distanza ma sono un'interpretazione probabilistica e possibilistica.
+\begin{table}[H]
 \centering%
 \caption{Risultato di 10 iterazioni della procedura di apprendimento simultaneo utilizzando il metodo di clustering possibilistico\label{pcm}.}
 \begin{tabular}{|c|c|c|c|c|}
@@ -732,14 +783,15 @@ Dim. & Avg. & StDev.& Avg. & StDev. \\
 \end{tabular}
 \end{table}
 \section{Complessità}
-Prendendo come riferimento l'algoritmo SMO\cite{platt1998sequential} per la risoluzione di problemi di ottimizzazione quadratici, la complessità temporale per la risoluzione del problema di ottimizzazione alla base del support vector clustering risulta, anche per l'apprendimento simultaneo di insiemi fuzzy, pari a $O(n^2)$, dove $n$ è il numero di esempi presenti nel training set. Indicando rispettivamente con $n_{sv}$ il numero di support vector individuati a valle del problema di ottimizzazione e con $n_{out}$ il numero di outlier, la complessità della fase di ricerca dei cluster, dovendo costruire e controllare le condizioni di appartenenza allo stesso cluster per ogni possibile coppia di punti, risulta essere $O((n-n_{out})^2)$. È possibile ridurre la complessità della fase di clustering controllando i segmenti congiungenti le sole coppie di punti contenenti un vettore di supporto senza perdite nell'accuratezza\cite{ben2001support}. Tale complessità risulta quindi diminuire a $O((n-n_{out})n_{sv})$. Il valore $n_{out}$ è controllato dal parametro $C$ come osservato in\cite{ben2001support} mediante la disequazione 
+Prendendo come riferimento l'algoritmo SMO \cite{platt1998sequential} per la risoluzione di problemi di ottimizzazione quadratici, la complessità temporale per la risoluzione del problema di ottimizzazione alla base del support vector clustering risulta, anche per l'apprendimento simultaneo di insiemi fuzzy, pari a $O(n^2)$, dove $n$ è il numero di esempi presenti nel training set. Indicando rispettivamente con $n_{sv}$ il numero di support vector individuati a valle del problema di ottimizzazione e con $n_{out}$ il numero di outlier, la complessità della fase di ricerca dei cluster, dovendo costruire e controllare le condizioni di appartenenza allo stesso cluster per ogni possibile coppia di punti, risulta essere $O((n-n_{out})^2)$. È possibile ridurre la complessità della fase di clustering controllando i segmenti congiungenti le sole coppie di punti contenenti un vettore di supporto senza perdite nell'accuratezza \cite{ben2001support}. Tale complessità risulta quindi diminuire a $O((n-n_{out})n_{sv})$. Il valore $n_{out}$ è controllato dal parametro $C$ come osservato in \cite{ben2001support} mediante la disequazione 
 \begin{equation}
 n_{out} < \dfrac{1}{nC}.
 \end{equation}
 È necessario evidenziare che questo procedimento viene applicato ulteriormente, per ogni cluster, in quello che è stato chiamato secondo livello dell'apprendimento simultaneo di fuzzy set.\\
-Si noti infine che un metodo recentemente proposto, basandosi su proprietà topologiche delle funzioni kernel\cite{lee2005improved}, riduce la complessità della clusterizzazione a $O(n)$ e, in specifiche situazioni, a $O(nlog(n))$.  L'accuratezza della classificazione ne risulta però deteriorata.
+Si noti infine che un metodo recentemente proposto, basandosi su proprietà topologiche delle funzioni kernel \cite{lee2005improved}, riduce la complessità della clusterizzazione a $O(n)$ e, in specifiche situazioni, a $O(nlog(n))$.  L'accuratezza della classificazione ne risulta però deteriorata.
 \chapter*{Conclusioni}
-Questa tesi ha proposto l'estensione di un metodo di apprendimento per funzioni di appartenenza a un insieme fuzzy. In particolare, l'algoritmo originale (basato sul concetto di support vector clustering) è stato adattato al fine di apprendere in modo simultaneo le funzioni di appartenenza di molteplici insiemi fuzzy definiti in uno stesso spazio. Una volta definita la procedura in maniera analitica è stato costruito un ambiente per la sperimentazione e l'analisi dell'algoritmo in modo supervisionato, al fine di testare la procedura secondo diverse opzioni. In particolare, per la fase di fuzzificazione, che risulta essere centrale nell'apprendimento di insiemi fuzzy, sono state utilizzate differenti tipologie di funzioni. I risultati sperimentali hanno mostrato come l'utilizzo di funzioni più vicine al modello di appartenenza crisp mal si adattano alla costruzione di insiemi sovrapposti, come per il caso delle classi \textit{versicolor} e \textit{virginica}, i cui confini si mischiano diventando così difficilmente delineabili. Per questo tipo di insiemi l'alternativa fuzzy risulta essere la più accurata. Inoltre, in facoltà dei risultati ottenuti dal confronto con l'algoritmo \textit{fuzzy c-means} si può affermare che il metodo proposto sia una valida alternativa nell'inferenza di insiemi fuzzy. Il processo di fuzzificazione risulta essere indipendente dal metodo di clustering utilizzato per l'individuazione dei diversi insiemi fuzzy. Questo apre molteplici possibilità di sviluppo, come lo sono il metodo migliorato per il support vector clustering e l'algoritmo possibilistico: il primo nell'ordine di diminuire la complessità computazionale della procedura,  mentre il secondo in virtù dei primi risultati sperimentali ottenuti, che superano in media quelli ottenuti tramite support vector clustering. Infine, un ulteriore sviluppo del lavoro proposto potrebbe essere quello di estendere l'algoritmo al fine di apprendere fuzzy set di tipo 2.
+\addcontentsline{toc}{chapter}{Conclusioni}
+Questa tesi ha proposto l'estensione di un metodo di apprendimento per funzioni di appartenenza a un insieme fuzzy. In particolare, è stato adattato un algoritmo proposto in letteratura (basato sul concetto di support vector clustering) al fine di apprendere in modo simultaneo le funzioni di appartenenza di molteplici insiemi fuzzy definiti in uno stesso spazio. Una volta definita la procedura in maniera analitica, è stato costruito un ambiente per la sperimentazione e l'analisi dell'algoritmo in modo supervisionato, al fine di testare la procedura secondo diverse opzioni. In particolare, per la fase di fuzzificazione, che risulta essere centrale nell'apprendimento di insiemi fuzzy, sono state utilizzate differenti tipologie di funzioni. I risultati sperimentali hanno mostrato come l'utilizzo di funzioni più vicine al concetto classico di insieme mal si adattano alla costruzione di insiemi sovrapposti, come per il caso delle classi \textit{versicolor} e \textit{virginica} nel dataset Iris, i cui confini si mischiano diventando così difficilmente delineabili. Per questo tipo di insiemi, l'alternativa fuzzy risulta essere la più accurata. Inoltre, in facoltà dei risultati ottenuti dal confronto con l'algoritmo \textit{fuzzy c-means} si può affermare che il metodo proposto sia una valida alternativa nell'inferenza di insiemi fuzzy. Il processo di fuzzificazione risulta essere indipendente dal metodo di clustering utilizzato per l'individuazione dei diversi insiemi fuzzy. Questo apre molteplici possibilità di sviluppo, per esempio utilizzando metodi migliorati per il support vector clustering oppure algoritmi di tipo  possibilistico: i primi nell'ordine di diminuire la complessità computazionale della procedura,  mentre i secondi in virtù dei primi risultati sperimentali ottenuti, che superano in media quelli ottenuti tramite support vector clustering. Infine, un ulteriore sviluppo del lavoro proposto potrebbe essere quello di estendere l'algoritmo al fine di apprendere fuzzy set di tipo 2.
 \bibliography{tesi.bib}
 \bibliographystyle{unsrt}
 \end{document}
